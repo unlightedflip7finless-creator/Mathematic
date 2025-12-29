@@ -231,10 +231,17 @@
 
             function parseText(text) {
                 if (!text) return "";
-                return text
-                    .replace(/`([^`]+)`/g, '<span class="bg-gray-200 text-bauhaus-red font-mono px-1 rounded text-sm md:text-base mx-1">$1</span>')
+                // Escape HTML special characters first
+                const safeText = text
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+
+                return safeText
+                    // Code: Removed background box, using clean text style
+                    .replace(/`([^`]+)`/g, '<span class="font-mono text-bauhaus-red font-bold mx-1">$1</span>')
                     .replace(/\$([^$]+)\$/g, '<span class="font-serif italic mx-1">$1</span>')
-                    .replace(/\*\*([^*]+)\*\*/g, '<span class="text-bauhaus-blue">$1</span>');
+                    .replace(/\*\*([^*]+)\*\*/g, '<span class="text-bauhaus-blue font-bold">$1</span>');
             }
 
             function startQuiz(countMode) {
