@@ -21,8 +21,8 @@
                     colors: {
                         'bauhaus-black': '#121212',
                         'bauhaus-white': '#fdfbf7',
-                        'bauhaus-red': '#d03020', /* 少し鮮やかに調整 */
-                        'bauhaus-blue': '#1a5fb4', /* 少し深めに調整 */
+                        'bauhaus-red': '#d03020',
+                        'bauhaus-blue': '#1a5fb4',
                         'bauhaus-yellow': '#f5c211',
                         'bauhaus-gray': '#e5e5e5',
                     },
@@ -47,12 +47,12 @@
     <style>
         body { background-color: #fdfbf7; color: #121212; }
         
-        /* ボタンのエフェクト: 影をなくし、色反転のみにする */
+        /* ボタンのエフェクト: 影なし、アクティブ時のみ縮小 */
         .btn-flat {
-            transition: all 0.2s ease;
+            transition: transform 0.1s ease;
         }
         .btn-flat:active {
-            transform: scale(0.98);
+            transform: scale(0.96);
         }
         
         /* 幾何学背景 */
@@ -112,15 +112,22 @@
                     <h3 id="q-text" class="text-xl md:text-3xl font-bold leading-relaxed tracking-tight text-bauhaus-black flex items-start"></h3>
                 </div>
                 
-                <!-- Answer Buttons: Simple Outlines -->
+                <!-- Answer Buttons: Outline Only (No Hover Fill), Active Fill -->
                 <div class="grid grid-cols-2 gap-4 md:gap-8 mt-auto pt-4">
-                    <button onclick="ENGINE.submitAnswer(true)" class="btn-flat min-h-[140px] md:min-h-[160px] border-4 border-bauhaus-blue text-bauhaus-blue bg-white hover:bg-bauhaus-blue hover:text-white flex flex-col items-center justify-center gap-3">
+                    <button onclick="ENGINE.submitAnswer(true)" class="btn-flat min-h-[140px] md:min-h-[160px] border-4 border-bauhaus-blue text-bauhaus-blue bg-white active:bg-bauhaus-blue active:text-white flex flex-col items-center justify-center gap-3">
                         <span class="text-5xl md:text-6xl font-black leading-none">○</span>
                         <span class="text-xs md:text-sm font-bold tracking-widest uppercase">TRUE / 正しい</span>
                     </button>
-                    <button onclick="ENGINE.submitAnswer(false)" class="btn-flat min-h-[140px] md:min-h-[160px] border-4 border-bauhaus-red text-bauhaus-red bg-white hover:bg-bauhaus-red hover:text-white flex flex-col items-center justify-center gap-3">
+                    <button onclick="ENGINE.submitAnswer(false)" class="btn-flat min-h-[140px] md:min-h-[160px] border-4 border-bauhaus-red text-bauhaus-red bg-white active:bg-bauhaus-red active:text-white flex flex-col items-center justify-center gap-3">
                         <span class="text-5xl md:text-6xl font-black leading-none">×</span>
                         <span class="text-xs md:text-sm font-bold tracking-widest uppercase">FALSE / 誤り</span>
+                    </button>
+                </div>
+
+                <!-- Quit Button in Question Screen -->
+                <div class="text-center mt-6">
+                    <button onclick="ENGINE.resetApp()" class="text-xs text-gray-400 hover:text-bauhaus-black font-bold tracking-widest uppercase py-2 px-4 transition-colors">
+                        Quit / 最初に戻る
                     </button>
                 </div>
             </div>
@@ -141,7 +148,7 @@
                 </div>
                 <div class="space-y-6 mt-auto">
                     <button onclick="ENGINE.nextQuestion()" id="next-btn" class="btn-flat w-full py-5 bg-bauhaus-black text-white font-bold hover:bg-gray-800 transition-colors flex items-center justify-center gap-3 text-lg border-2 border-bauhaus-black"></button>
-                    <!-- Quit Button: Minimal Text -->
+                    <!-- Quit Button in Feedback Screen -->
                     <div class="text-center">
                         <button onclick="ENGINE.resetApp()" class="text-xs text-gray-400 hover:text-bauhaus-black font-bold tracking-widest uppercase py-2 px-4 transition-colors">
                             Quit / 最初に戻る
