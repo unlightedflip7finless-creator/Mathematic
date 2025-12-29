@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Science Literacy Quiz (Refactored)</title>
+    <title>Data Science Literacy Quiz (Final)</title>
     <style>
         /* =========================================
-           STYLE SECTION
-           デザイン・レイアウト定義 (Bauhaus Style)
+           STYLE SECTION (Bauhaus Style)
            =========================================
         */
         :root {
@@ -45,6 +44,7 @@
             position: relative;
         }
 
+        /* --- HEADER --- */
         header {
             background-color: var(--c-black);
             color: var(--c-white);
@@ -52,10 +52,25 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 60px;
         }
         .header-title { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.05em; }
+        .header-right { display: flex; align-items: center; gap: 1rem; }
         .score-mini { font-size: 1rem; font-weight: 700; color: var(--c-yellow); }
+        
+        /* Exit Button in Header */
+        .btn-exit {
+            background: transparent;
+            border: 1px solid #555;
+            color: #aaa;
+            font-size: 0.8rem;
+            padding: 0.3rem 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-exit:hover { background: var(--c-red); color: white; border-color: var(--c-red); }
 
+        /* --- PROGRESS --- */
         .progress-container {
             height: 10px;
             background: var(--c-gray);
@@ -69,6 +84,7 @@
             transition: width 0.3s ease;
         }
 
+        /* --- SCREENS --- */
         .screen {
             flex: 1;
             padding: 2rem;
@@ -86,10 +102,39 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* --- START SCREEN COMPONENTS --- */
         .hero-icon { font-size: 5rem; margin-bottom: 1rem; color: var(--c-red); }
         .hero-title { font-size: 2rem; font-weight: 800; margin-bottom: 1rem; }
         .hero-desc { color: #555; margin-bottom: 2rem; max-width: 500px; }
+        
+        /* Course Selection Grid */
+        .course-select {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .btn-course {
+            padding: 1rem;
+            font-weight: 700;
+            border: 3px solid var(--c-black);
+            background: var(--c-white);
+            cursor: pointer;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn-course:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
+        .btn-course:hover { filter: brightness(0.95); }
 
+        /* Course Colors */
+        .c-10 { border-color: var(--c-blue); color: var(--c-blue); }
+        .c-30 { border-color: var(--c-yellow); color: #bba111; }
+        .c-50 { border-color: var(--c-red); color: var(--c-red); }
+        .c-all { border-color: var(--c-black); color: var(--c-black); background: var(--c-black); color: var(--c-white); }
+        .c-all:hover { background: #333; color: white; }
+
+        /* --- QUESTION COMPONENTS --- */
         .q-meta {
             font-size: 0.9rem;
             color: #666;
@@ -113,7 +158,8 @@
             max-width: 500px;
         }
         
-        button {
+        /* General Buttons */
+        button.action-btn {
             border: 3px solid var(--c-black);
             background: var(--c-white);
             color: var(--c-black);
@@ -124,8 +170,7 @@
             box-shadow: 5px 5px 0 var(--c-black);
             transition: all 0.1s;
         }
-        button:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 var(--c-black); }
-        button:hover { background-color: #f0f0f0; }
+        button.action-btn:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 var(--c-black); }
 
         .btn-true { color: var(--c-blue); border-color: var(--c-blue); box-shadow: 5px 5px 0 var(--c-blue); }
         .btn-true:hover { background-color: var(--c-blue); color: var(--c-white); }
@@ -136,6 +181,7 @@
         .btn-next { background: var(--c-black); color: var(--c-white); width: 100%; max-width: 300px; margin-top: 1rem; }
         .btn-next:hover { background: #333; }
 
+        /* --- FEEDBACK COMPONENTS --- */
         .fb-status { font-size: 1.5rem; font-weight: 900; margin-bottom: 1rem; }
         .fb-correct { color: var(--c-blue); }
         .fb-wrong { color: var(--c-red); }
@@ -149,6 +195,7 @@
         }
 
         .res-score { font-size: 4rem; font-weight: 900; color: var(--c-black); margin: 1rem 0; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -157,7 +204,11 @@
 <div class="app-container">
     <header>
         <div class="header-title" id="displayTitle">APP TITLE</div>
-        <div class="score-mini">SCORE: <span id="miniScore">0</span></div>
+        <div class="header-right">
+            <div class="score-mini">SCORE: <span id="miniScore">0</span></div>
+            <!-- トップに戻るボタン (初期状態は隠す) -->
+            <button id="btnExit" class="btn-exit hidden" onclick="Engine.resetQuiz()">EXIT</button>
+        </div>
     </header>
     
     <div class="progress-container">
@@ -169,7 +220,14 @@
         <div class="hero-icon">■</div>
         <h2 class="hero-title" id="startTitle">Title</h2>
         <p class="hero-desc" id="startDesc">Description</p>
-        <button class="btn-next" onclick="Engine.startQuiz()">START</button>
+        
+        <div style="margin-bottom: 0.5rem; font-weight:bold; color:#666;">SELECT COURSE</div>
+        <div class="course-select">
+            <button class="btn-course c-10" onclick="Engine.startQuiz(10)">10 Questions</button>
+            <button class="btn-course c-30" onclick="Engine.startQuiz(30)">30 Questions</button>
+            <button class="btn-course c-50" onclick="Engine.startQuiz(50)">50 Questions</button>
+            <button class="btn-course c-all" onclick="Engine.startQuiz(null)">ALL Questions</button>
+        </div>
     </div>
 
     <!-- QUESTION SCREEN -->
@@ -177,8 +235,8 @@
         <div class="q-meta">Question <span id="qCurrent">1</span> / <span id="qTotal">10</span></div>
         <div id="qText" class="q-text">Loading...</div>
         <div class="btn-group">
-            <button class="btn-true" onclick="Engine.answer(true)">TRUE / 正しい</button>
-            <button class="btn-false" onclick="Engine.answer(false)">FALSE / 誤り</button>
+            <button class="action-btn btn-true" onclick="Engine.answer(true)">TRUE / 正しい</button>
+            <button class="action-btn btn-false" onclick="Engine.answer(false)">FALSE / 誤り</button>
         </div>
     </div>
 
@@ -190,7 +248,7 @@
             <strong>解説:</strong><br>
             <span id="fbExpl">...</span>
         </div>
-        <button class="btn-next" onclick="Engine.nextQuestion()">NEXT</button>
+        <button class="action-btn btn-next" onclick="Engine.nextQuestion()">NEXT</button>
     </div>
 
     <!-- RESULT SCREEN -->
@@ -199,7 +257,7 @@
         <p>あなたの正解数</p>
         <div class="res-score"><span id="resScore">0</span> / <span id="resTotal">0</span></div>
         <p id="resMsg" style="margin-bottom:2rem;">...</p>
-        <button class="btn-next" onclick="Engine.resetQuiz()">TRY AGAIN</button>
+        <button class="action-btn btn-next" onclick="Engine.resetQuiz()">TOP MENU</button>
     </div>
 </div>
 
@@ -212,16 +270,10 @@
        ##########################################################################
     */
     const APP_CONFIG = {
-        // アプリの表示タイトル
-        title: "DS LITERACY 100", 
+        title: "DS LITERACY QUIZ", 
+        startTitle: "Data Science<br>Challenge",
+        startDescription: "全資料（基礎・導入 第1回〜第8回）から厳選された100問のTrue/Falseクイズ。<br>あなたのデータリテラシーをテストします。",
         
-        // スタート画面の設定
-        startTitle: "Data Science<br>Challenge 100",
-        startDescription: "全資料（基礎・導入 第1回〜第8回）から厳選された100問のTrue/Falseクイズ。<br>あなたのデータリテラシーを徹底的にテストします。",
-        
-        // 出題数の制限 (null または 0 で全問出題。数値を入れればその数だけランダム出題)
-        maxQuestions: null, 
-
         // 結果画面のメッセージ (正答率% に応じた評価)
         resultMessages: [
             { threshold: 90, msg: "Excellent! データサイエンス・マスターレベルです。" },
@@ -231,17 +283,14 @@
         ]
     };
 
-
     /* ##########################################################################
        #                                                                        #
        #  SECTION 2: ENGINE (ロジック)                                          #
-       #  このセクションは変更不要です。                                        #
-       #  (データが読み込まれた後に動作するように設計されています)              #
+       #  ※このセクションは修正不要です。                                      #
        #                                                                        #
        ##########################################################################
     */
     
-    // Engine Namespace
     const Engine = (function() {
         let state = {
             shuffledQuestions: [],
@@ -251,6 +300,7 @@
         };
 
         const els = {
+            btnExit: document.getElementById('btnExit'),
             screens: {
                 start: document.getElementById('screenStart'),
                 question: document.getElementById('screenQuestion'),
@@ -276,7 +326,6 @@
         };
 
         function init() {
-            // Apply Config
             els.display.title.innerText = APP_CONFIG.title;
             els.display.startTitle.innerHTML = APP_CONFIG.startTitle;
             els.display.startDesc.innerHTML = APP_CONFIG.startDescription;
@@ -288,8 +337,15 @@
                 s.style.display = 'none';
             });
             els.screens[name].style.display = 'flex';
-            void els.screens[name].offsetWidth; // reflow
+            void els.screens[name].offsetWidth; 
             els.screens[name].classList.add('active');
+
+            // Exitボタンの表示制御: スタート画面と結果画面では非表示
+            if (name === 'start' || name === 'result') {
+                els.btnExit.classList.add('hidden');
+            } else {
+                els.btnExit.classList.remove('hidden');
+            }
         }
 
         function shuffle(array) {
@@ -301,8 +357,8 @@
             return arr;
         }
 
-        function startQuiz() {
-            // NOTE: questionDB is accessed here, so it must be defined before this function runs
+        // 引数 count で問題数を指定してスタート
+        function startQuiz(count) {
             if (typeof questionDB === 'undefined' || !questionDB.length) {
                 alert("Error: DATABASE is empty or not loaded.");
                 return;
@@ -310,8 +366,9 @@
 
             state.shuffledQuestions = shuffle(questionDB);
             
-            if (APP_CONFIG.maxQuestions && APP_CONFIG.maxQuestions > 0 && APP_CONFIG.maxQuestions < state.shuffledQuestions.length) {
-                state.shuffledQuestions = state.shuffledQuestions.slice(0, APP_CONFIG.maxQuestions);
+            // 指定数があればスライス、なければ全問
+            if (count && count > 0 && count < state.shuffledQuestions.length) {
+                state.shuffledQuestions = state.shuffledQuestions.slice(0, count);
             }
 
             state.totalQuestions = state.shuffledQuestions.length;
@@ -383,25 +440,20 @@
                     break;
                 }
             }
-            
             els.display.resMsg.innerText = msg;
             showScreen('result');
         }
 
         function resetQuiz() {
+            // トップに戻る
+            state.score = 0;
+            els.display.miniScore.innerText = '0';
+            els.display.progressBar.style.width = '0%';
             showScreen('start');
         }
 
-        // Public API
-        return {
-            init,
-            startQuiz,
-            answer,
-            nextQuestion,
-            resetQuiz
-        };
+        return { init, startQuiz, answer, nextQuestion, resetQuiz };
     })();
-
 
     /* ##########################################################################
        #                                                                        #
@@ -412,26 +464,11 @@
     */
 
     /*
-      [ カラム名称と定義 ]
-      ---------------------------------------------------------
-      | キー | 名称 (Type)      | 説明                          |
-      |------|------------------|-------------------------------|
-      | q    | Question (String)| 問題文 (HTMLタグ使用可)       |
-      | a    | Answer (Boolean) | 正解 (true: 正しい, false: 誤り)|
-      | e    | Explanation (Str)| 解説文                        |
-      ---------------------------------------------------------
-
-      [ 編集用テンプレート ]
-      コピペして使ってください:
-      
-      { 
-          q: "問題文をここに書く", 
-          a: true, 
-          e: "解説をここに書く" 
-      },
-
+      [ カラム定義 ]
+      q: 問題文 (HTML可)
+      a: 正解 (true / false)
+      e: 解説文
     */
-
     const questionDB = [
         
         // --- 基礎 第1回 社会をデータでかたる ---
@@ -590,7 +627,6 @@
     /* ##########################################################################
        #                                                                        #
        #  INITIALIZATION (初期化)                                               #
-       #  全ての準備が整ったのでアプリを起動します。                            #
        #                                                                        #
        ##########################################################################
     */
