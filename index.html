@@ -81,8 +81,6 @@
             transition: background-color 0.2s;
         }
 
-        /* ホバー時にJSで設定した色を適用するためのCSS変数的アプローチはJS側で制御 */
-        
         .arrow { float: right; opacity: 0; transition: opacity 0.2s; }
         a:hover .arrow { opacity: 1; }
     </style>
@@ -114,7 +112,12 @@
             { 
                 title: "Data Management", 
                 url:   "Data_Management.html", 
-                color: "var(--orange)"  // 構造・管理 (New!)
+                color: "var(--orange)"  // 構造・管理
+            },
+            { 
+                title: "FOMC Master", 
+                url:   "FOMC_Master/index.html", // ディレクトリ構造と想定
+                color: "var(--green)"   // 金融・経済
             }
         ];
 
@@ -134,9 +137,6 @@
                 // カラーバー作成
                 const colorBar = document.createElement('div');
                 colorBar.className = 'color-bar';
-                // 初期状態は薄い色(--base2)だが、マウスオーバー時に固有色にするための仕掛け
-                // ここではシンプルに常に固有色を表示するか、あるいはCSSで制御するか。
-                // 前回のデザインを踏襲し、常時色を表示しつつ、ホバーで強調されるスタイルにします。
                 colorBar.style.backgroundColor = app.color; 
 
                 // テキストノード
