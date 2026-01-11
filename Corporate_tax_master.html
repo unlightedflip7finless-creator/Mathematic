@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FP1級 法人税別表マスター（Input Edition）</title>
+    <title>FP1級 法人税別表マスター（Matrix Edition）</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Noto Sans JP -->
@@ -36,16 +36,43 @@
             background-color: #27272a;
             border-color: #a1a1aa;
         }
+        /* スクロールバーのカスタマイズ（Table用） */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #27272a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #52525b;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
 
-    <div id="app" class="w-full max-w-lg bg-[#27272a] border-2 border-[#52525b] bauhaus-shadow-dark p-6 sm:p-10 fade-in relative min-h-[640px] flex flex-col">
+    <div id="app" class="w-full max-w-2xl bg-[#27272a] border-2 border-[#52525b] bauhaus-shadow-dark p-6 sm:p-10 fade-in relative min-h-[640px] flex flex-col">
         <!-- JSで描画 -->
     </div>
 
     <script>
-        // --- 1. 問題データベース (様式名称を追加) ---
+        // --- 0. マトリックスデータ ---
+        const matrixData = [
+            { cat: "計算の出口", num: "一（一）", name: "普通法人申告書", point: "税額計算の最終結果。中小法人の軽減税率（15%）の適用。" },
+            { cat: "属性判定", num: "二", name: "同族会社等の判定", point: "重要。同族会社・特定同族会社の判定。私的自治への制限の端緒。" },
+            { cat: "所得調整", num: "四", name: "所得の金額の計算", point: "最重要。確定決算主義と税務固有の調整（加算・減算）。" },
+            { cat: "資産管理", num: "五（一）", name: "利益積立金・資本金等", point: "税務上のB/S。純資産の推移。自己株式の取得等の資本取引も含む。" },
+            { cat: "租税公課", num: "五（二）", name: "租税公課の納付状況", point: "損金不算入となる法人税・住民税と、損金算入される事業税の峻別。" },
+            { cat: "欠損金", num: "七（一）", name: "欠損金の損金算入", point: "欠損金の繰越控除。事業承継や企業再生における「担税力」の調整。" },
+            { cat: "二重課税", num: "八（一）", name: "受取配当の益金不算入", point: "法人を通じた配当に対する二重課税の排除ロジック。" },
+            { cat: "引当金", num: "十一", name: "貸倒引当金", point: "中小法人等に認められる法定繰入率等の特例実務。" },
+            { cat: "社会的費用", num: "十四（二）", name: "寄附金の損金算入", point: "損金算入限度額の計算。公益への寄与と租税回避の境界。" },
+            { cat: "政策減税", num: "十五", name: "交際費等の損金算入", point: "飲食費50%不算入と800万円定額控除の有利選択（実務頻出）。" },
+            { cat: "償却実務", num: "十六", name: "減価償却資産の計算", point: "16(7)の中小特例（30万円未満）を含む。課税の時期繰延べ機能。" }
+        ];
+
+        // --- 1. 問題データベース ---
         const quizData = [
             // --- 別表一（一） ---
             {
@@ -72,7 +99,6 @@
                 answer: 0,
                 note: "計算明細は別表三（一）ですが、最終的に法人税額として合算・申告するのは別表一（一）です。"
             },
-
             // --- 別表二 ---
             {
                 formNum: "別表二",
@@ -98,7 +124,6 @@
                 answer: 0,
                 note: "原則として、その事業年度終了の現況により判定します。"
             },
-
             // --- 別表四 ---
             {
                 formNum: "別表四",
@@ -124,7 +149,6 @@
                 answer: 0,
                 note: "過去の留保項目を取り崩すため「減算・留保」となります。別表五（一）の積立金を減らします。"
             },
-
             // --- 別表五（一） ---
             {
                 formNum: "別表五（一）",
@@ -150,7 +174,6 @@
                 answer: 0,
                 note: "会計上の資本金は増えますが、税務上の「資本金等の額」は株主からの払込がない限り原則変動しません。"
             },
-
             // --- 別表五（二） ---
             {
                 formNum: "別表五（二）",
@@ -176,7 +199,6 @@
                 answer: 0,
                 note: "まず別表五（二）で支払実績と損金不算入を整理します。"
             },
-
             // --- 別表七（一） ---
             {
                 formNum: "別表七（一）",
@@ -202,7 +224,6 @@
                 answer: 0,
                 note: "還付を受けきれなかった残額を翌期に繰り越す場合など、計算の連続性のために重要です。"
             },
-
             // --- 別表八（一） ---
             {
                 formNum: "別表八（一）",
@@ -228,7 +249,6 @@
                 answer: 0,
                 note: "令和4年度改正により、5%以下の保有区分は20%の益金不算入となりました。"
             },
-
             // --- 別表十一 ---
             {
                 formNum: "別表十一",
@@ -254,7 +274,6 @@
                 answer: 0,
                 note: "引当金否認は社内留保となるため「加算・留保」です。"
             },
-
             // --- 別表十四（二） ---
             {
                 formNum: "別表十四（二）",
@@ -280,7 +299,6 @@
                 answer: 0,
                 note: "資本基準と所得基準の合計の1/4（または1/2）などで計算します。"
             },
-
             // --- 別表十五 ---
             {
                 formNum: "別表十五",
@@ -306,7 +324,6 @@
                 answer: 0,
                 note: "所定の要件を満たせば「会議費」等として全額損金となり、別表十五の計算から除外できます。"
             },
-
             // --- 別表十六 ---
             {
                 formNum: "別表十六",
@@ -336,7 +353,7 @@
 
         // --- 2. アプリの状態管理 ---
         let state = {
-            screen: 'start', // start, quiz, result
+            screen: 'start', // start, quiz, result, reference
             currentQuestionIndex: 0,
             score: 0,
             shuffledQuestions: []
@@ -353,20 +370,70 @@
         // スタート画面
         function renderStart() {
             app.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full space-y-8 py-10 fade-in">
-                    <div class="text-center space-y-2">
+                <div class="flex flex-col items-center justify-center h-full space-y-6 py-10 fade-in w-full">
+                    <div class="text-center space-y-2 mb-4">
                         <p class="text-sm font-bold tracking-widest text-zinc-500 uppercase">FP1 Grade Tax Law</p>
-                        <h1 class="text-4xl font-black tracking-tighter text-white">法人税<br>別表Master<br><span class="text-lg font-normal text-zinc-400">Input Edition</span></h1>
+                        <h1 class="text-4xl font-black tracking-tighter text-white">法人税<br>別表Master<br><span class="text-lg font-normal text-zinc-400">Matrix Edition</span></h1>
                     </div>
-                    <div class="w-16 h-1 bg-white"></div>
-                    <p class="text-center text-sm text-zinc-400 leading-relaxed max-w-xs">
+                    <div class="w-16 h-1 bg-white mb-4"></div>
+                    <p class="text-center text-sm text-zinc-400 leading-relaxed max-w-xs mb-4">
                         11様式 × 3問 = 全33問。<br>
                         正式名称と機能のリンクを<br>
                         脳に刻み込む。
                     </p>
-                    <button onclick="startQuiz()" class="w-full max-w-xs bg-zinc-900 text-white border-2 border-white font-bold py-4 px-8 bauhaus-shadow-dark btn-hover transition-transform text-lg tracking-widest hover:bg-zinc-800">
-                        START
-                    </button>
+                    
+                    <div class="flex flex-col space-y-4 w-full max-w-xs">
+                        <button onclick="startQuiz()" class="w-full bg-zinc-900 text-white border-2 border-white font-bold py-4 px-8 bauhaus-shadow-dark btn-hover transition-transform text-lg tracking-widest hover:bg-zinc-800">
+                            START QUIZ
+                        </button>
+                        <button onclick="renderReference()" class="w-full bg-transparent text-zinc-300 border-2 border-zinc-500 font-bold py-3 px-6 bauhaus-shadow-sm-dark btn-hover transition-transform hover:bg-zinc-800 hover:text-white hover:border-white">
+                            REFERENCE
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // マトリックス参照画面
+        function renderReference() {
+            // テーブル行の生成
+            const rows = matrixData.map(d => `
+                <tr class="border-b border-zinc-700 hover:bg-zinc-800 transition-colors">
+                    <td class="p-3 text-xs text-zinc-400 font-mono whitespace-nowrap">${d.cat}</td>
+                    <td class="p-3 text-sm font-bold text-yellow-500 font-mono whitespace-nowrap text-center">${d.num}</td>
+                    <td class="p-3 text-sm text-white font-bold min-w-[140px]">${d.name}</td>
+                    <td class="p-3 text-xs text-zinc-300 leading-relaxed min-w-[200px]">${d.point}</td>
+                </tr>
+            `).join('');
+
+            app.innerHTML = `
+                <div class="flex flex-col h-full fade-in w-full">
+                    <div class="flex justify-between items-center mb-6 border-b border-zinc-600 pb-2">
+                        <h2 class="text-xl font-bold text-white tracking-tight">重点別表Matrix</h2>
+                        <button onclick="renderStart()" class="text-sm font-bold underline text-zinc-500 hover:text-white transition-colors">BACK</button>
+                    </div>
+                    
+                    <div class="flex-grow overflow-x-auto custom-scrollbar border border-zinc-700 bg-[#18181b]">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-zinc-800 text-zinc-300 border-b border-zinc-600 text-xs uppercase tracking-wider">
+                                    <th class="p-3 font-medium">区分</th>
+                                    <th class="p-3 font-medium text-center">No.</th>
+                                    <th class="p-3 font-medium">名称</th>
+                                    <th class="p-3 font-medium">FP1級・実務のポイント</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <button onclick="startQuiz()" class="w-full max-w-xs bg-zinc-900 text-white border-2 border-white font-bold py-3 px-6 bauhaus-shadow-dark btn-hover transition-transform hover:bg-zinc-800">
+                            START QUIZ from Here
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -379,7 +446,7 @@
             renderQuiz();
         }
 
-        // クイズ画面（様式名称追加）
+        // クイズ画面
         function renderQuiz() {
             const q = state.shuffledQuestions[state.currentQuestionIndex];
             const optionIndices = [0, 1].sort(() => Math.random() - 0.5);
@@ -468,14 +535,14 @@
             let colorClass = "text-white";
 
             if (percentage === 100) {
-                message = "Perfect. 様式と機能が完全にリンクしています。";
+                message = "Perfect. マトリックスが脳内に構築されました。";
                 colorClass = "text-yellow-500";
             } else if (percentage >= 90) {
                 message = "Excellent. 安定した知識基盤です。";
             } else if (percentage >= 70) {
-                message = "Good. 苦手な様式を重点的に復習しましょう。";
+                message = "Good. 苦手な様式をReferenceで復習しましょう。";
             } else {
-                message = "Review Required. もう一度、様式名称から確認を。";
+                message = "Review Required. Referenceに戻って構造を確認しましょう。";
             }
 
             app.innerHTML = `
@@ -495,7 +562,10 @@
                         <button onclick="startQuiz()" class="w-full bg-zinc-900 text-white font-bold py-3 px-6 border-2 border-white bauhaus-shadow-dark btn-hover hover:bg-zinc-800">
                             RETRY (Shuffle)
                         </button>
-                        <button onclick="renderStart()" class="w-full bg-transparent text-white font-bold py-3 px-6 border-2 border-zinc-500 bauhaus-shadow-sm-dark btn-hover hover:bg-zinc-800">
+                        <button onclick="renderReference()" class="w-full bg-transparent text-white font-bold py-3 px-6 border-2 border-zinc-500 bauhaus-shadow-sm-dark btn-hover hover:bg-zinc-800">
+                            CHECK REFERENCE
+                        </button>
+                        <button onclick="renderStart()" class="text-sm font-bold underline text-zinc-500 hover:text-white mt-2">
                             BACK TO TOP
                         </button>
                     </div>
