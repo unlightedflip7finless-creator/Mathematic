@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP1級 法人税別表マスター（Input Edition）</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Noto Sans JP -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #18181b; /* Zinc-900 */
+            color: #e4e4e7; /* Zinc-200 */
+            -webkit-font-smoothing: antialiased;
+        }
+        .bauhaus-shadow-dark {
+            box-shadow: 4px 4px 0px 0px #3f3f46;
+        }
+        .bauhaus-shadow-sm-dark {
+            box-shadow: 2px 2px 0px 0px #3f3f46;
+        }
+        .btn-hover:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px transparent;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .option-btn:hover {
+            background-color: #27272a;
+            border-color: #a1a1aa;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
+
+    <div id="app" class="w-full max-w-lg bg-[#27272a] border-2 border-[#52525b] bauhaus-shadow-dark p-6 sm:p-10 fade-in relative min-h-[640px] flex flex-col">
+        <!-- JSで描画 -->
+    </div>
+
+    <script>
+        // --- 1. 問題データベース (様式名称を追加) ---
+        const quizData = [
+            // --- 別表一（一） ---
+            {
+                formNum: "別表一（一）",
+                formName: "各事業年度の所得に係る申告書",
+                question: "別表一（一）の「所得金額」欄には、どの別表の金額が転記されるか？",
+                options: ["別表四の総額", "別表五（一）の期末残高"],
+                answer: 0,
+                note: "別表四で確定した所得金額が、別表一（一）へ転記され、そこで税率が乗じられます。"
+            },
+            {
+                formNum: "別表一（一）",
+                formName: "各事業年度の所得に係る申告書",
+                question: "中小法人の年800万円以下の所得に対する「軽減税率（15%）」の適用計算を行う場所は？",
+                options: ["別表一（一）", "別表四"],
+                answer: 0,
+                note: "税額計算そのものは別表一（一）の機能です。別表四はあくまで所得の算出までです。"
+            },
+            {
+                formNum: "別表一（一）",
+                formName: "各事業年度の所得に係る申告書",
+                question: "同族会社の「留保金課税」の税額を加算して最終納付税額を出す別表は？",
+                options: ["別表一（一）", "別表三（一）"],
+                answer: 0,
+                note: "計算明細は別表三（一）ですが、最終的に法人税額として合算・申告するのは別表一（一）です。"
+            },
+
+            // --- 別表二 ---
+            {
+                formNum: "別表二",
+                formName: "同族会社等の判定に関する明細書",
+                question: "同族会社の判定において、上位何位までの株主グループで50%超を保有しているかを確認するか？",
+                options: ["第3順位まで", "第5順位まで"],
+                answer: 0,
+                note: "上位3グループで発行済株式等の50%超を保有する場合、同族会社と判定されます。"
+            },
+            {
+                formNum: "別表二",
+                formName: "同族会社等の判定に関する明細書",
+                question: "留保金課税の対象となる「特定同族会社」の判定を行う別表は？",
+                options: ["別表二", "別表一"],
+                answer: 0,
+                note: "別表二で株主構成を確認し、特定同族会社の該当性もここでチェックします。"
+            },
+            {
+                formNum: "別表二",
+                formName: "同族会社等の判定に関する明細書",
+                question: "同族会社の判定を行う時期（基準時）はいつか？",
+                options: ["事業年度終了の時", "株主総会の時"],
+                answer: 0,
+                note: "原則として、その事業年度終了の現況により判定します。"
+            },
+
+            // --- 別表四 ---
+            {
+                formNum: "別表四",
+                formName: "所得の金額の計算に関する明細書",
+                question: "別表四で「加算・留保」とされた項目は、税務上のB/Sである別表五（一）においてどう処理される？",
+                options: ["利益積立金額の増加となる", "利益積立金額の減少となる"],
+                answer: 0,
+                note: "加算・留保は「社内に残っている利益」とみなされ、別表五（一）の利益積立金を増加させます。"
+            },
+            {
+                formNum: "別表四",
+                formName: "所得の金額の計算に関する明細書",
+                question: "「役員給与の損金不算入額」のように、社外にお金が出ていったが損金にならないものはどう区分される？",
+                options: ["加算・社外流出", "加算・留保"],
+                answer: 0,
+                note: "お金は出ていっているので、会社内に留保されません。よって別表五（一）には蓄積されません。"
+            },
+            {
+                formNum: "別表四",
+                formName: "所得の金額の計算に関する明細書",
+                question: "前期に否認された「減価償却超過額」が当期に認容（損金算入）される場合の処理は？",
+                options: ["減算・留保", "減算・社外流出"],
+                answer: 0,
+                note: "過去の留保項目を取り崩すため「減算・留保」となります。別表五（一）の積立金を減らします。"
+            },
+
+            // --- 別表五（一） ---
+            {
+                formNum: "別表五（一）",
+                formName: "利益積立金額及び資本金等の額の計算に関する明細書",
+                question: "別表五（一）のⅠの部は主に何を表しているか？",
+                options: ["利益積立金額（税務上の繰越利益剰余金等）", "資本金等の額（税務上の資本金等）"],
+                answer: 0,
+                note: "Ⅰの部が利益積立金額、Ⅱの部が資本金等の額です。税務上の純資産の部を構成します。"
+            },
+            {
+                formNum: "別表五（一）",
+                formName: "利益積立金額及び資本金等の額の計算に関する明細書",
+                question: "「未納法人税等」として、確定申告で納付すべき税額を計上する場所は？",
+                options: ["別表五（一）", "別表五（二）"],
+                answer: 0,
+                note: "別表五（一）の下部（利益積立金額の計算内）で、未納法人税等を減算して翌期首残高を出します。"
+            },
+            {
+                formNum: "別表五（一）",
+                formName: "利益積立金額及び資本金等の額の計算に関する明細書",
+                question: "無償増資を行った場合、別表五（一）の「資本金等の額」は変動するか？",
+                options: ["変動しない", "増加する"],
+                answer: 0,
+                note: "会計上の資本金は増えますが、税務上の「資本金等の額」は株主からの払込がない限り原則変動しません。"
+            },
+
+            // --- 別表五（二） ---
+            {
+                formNum: "別表五（二）",
+                formName: "租税公課の納付状況等に関する明細書",
+                question: "損金算入が認められる「事業税」や「事業所税」の具体的な納付状況を記載する別表は？",
+                options: ["別表五（二）", "別表六"],
+                answer: 0,
+                note: "別表五（二）で納付状況を整理し、損金算入額を確定させて別表四へ転記します。"
+            },
+            {
+                formNum: "別表五（二）",
+                formName: "租税公課の納付状況等に関する明細書",
+                question: "別表五（二）で計算された「当期の法人税額」は、別表四でどう処理される？",
+                options: ["加算・社外流出（損金不算入）", "減算・留保"],
+                answer: 0,
+                note: "法人税は損金になりません。会計上で費用処理されていれば、別表四で加算（否認）します。"
+            },
+            {
+                formNum: "別表五（二）",
+                formName: "租税公課の納付状況等に関する明細書",
+                question: "期中に支払った「中間申告分の法人税」はどこに記載する？",
+                options: ["別表五（二）", "別表一（一）"],
+                answer: 0,
+                note: "まず別表五（二）で支払実績と損金不算入を整理します。"
+            },
+
+            // --- 別表七（一） ---
+            {
+                formNum: "別表七（一）",
+                formName: "欠損金又は災害損失金の控除に関する明細書",
+                question: "青色欠損金の繰越期間は、令和時代の現在、何年か？",
+                options: ["10年", "9年"],
+                answer: 0,
+                note: "平成30年4月1日以後開始事業年度から発生した欠損金は「10年」繰越可能です。"
+            },
+            {
+                formNum: "別表七（一）",
+                formName: "欠損金又は災害損失金の控除に関する明細書",
+                question: "中小法人等（資本金1億円以下等）の欠損金控除限度額は？",
+                options: ["所得金額の100%", "所得金額の50%"],
+                answer: 0,
+                note: "中小法人は所得の100%まで控除可能。大法人は50%制限があります。"
+            },
+            {
+                formNum: "別表七（一）",
+                formName: "欠損金又は災害損失金の控除に関する明細書",
+                question: "「欠損金の繰戻し還付」を受ける場合、別表七（一）の記入は必要か？",
+                options: ["必要（残額管理のため）", "不要"],
+                answer: 0,
+                note: "還付を受けきれなかった残額を翌期に繰り越す場合など、計算の連続性のために重要です。"
+            },
+
+            // --- 別表八（一） ---
+            {
+                formNum: "別表八（一）",
+                formName: "受取配当等の益金不算入に関する明細書",
+                question: "完全子法人株式（持株比率100%）からの配当の益金不算入割合は？",
+                options: ["100%（全額不算入）", "50%"],
+                answer: 0,
+                note: "完全グループ内の資金移動とみなされ、二重課税排除のため全額益金不算入となります。"
+            },
+            {
+                formNum: "別表八（一）",
+                formName: "受取配当等の益金不算入に関する明細書",
+                question: "関連法人株式等（1/3超保有）からの配当について、控除が必要なものは？",
+                options: ["負債の利子", "役員給与"],
+                answer: 0,
+                note: "配当を得るために借入金を用いたとみなされる分（負債利子）は、益金不算入額から控除します。"
+            },
+            {
+                formNum: "別表八（一）",
+                formName: "受取配当等の益金不算入に関する明細書",
+                question: "非支配目的株式等（持株比率5%以下）の益金不算入割合は？",
+                options: ["20%", "40%"],
+                answer: 0,
+                note: "令和4年度改正により、5%以下の保有区分は20%の益金不算入となりました。"
+            },
+
+            // --- 別表十一 ---
+            {
+                formNum: "別表十一",
+                formName: "貸倒引当金の損金算入に関する明細書",
+                question: "中小法人等にのみ認められる、貸倒引当金の計算方法は？",
+                options: ["法定繰入率による計算", "過去3年の実績率のみ"],
+                answer: 0,
+                note: "資本金1億円以下の中小法人は、実質的に貸倒れがなくても法定繰入率を使って損金算入できます。"
+            },
+            {
+                formNum: "別表十一",
+                formName: "貸倒引当金の損金算入に関する明細書",
+                question: "一括評価金銭債権に係る貸倒引当金の計算を行うのは？",
+                options: ["別表十一（一の二）", "別表十一（一）"],
+                answer: 0,
+                note: "十一（一）は個別評価、十一（一の二）が一括評価です。"
+            },
+            {
+                formNum: "別表十一",
+                formName: "貸倒引当金の損金算入に関する明細書",
+                question: "別表十一で計算した貸倒引当金繰入超過額は、別表四でどう処理する？",
+                options: ["加算・留保", "加算・社外流出"],
+                answer: 0,
+                note: "引当金否認は社内留保となるため「加算・留保」です。"
+            },
+
+            // --- 別表十四（二） ---
+            {
+                formNum: "別表十四（二）",
+                formName: "寄附金の損金算入に関する明細書",
+                question: "「完全支配関係」がある法人間の寄附金の取り扱いは？",
+                options: ["全額損金不算入", "限度額まで損金算入"],
+                answer: 0,
+                note: "グループ内での恣意的な利益移転を防ぐため、全額損金不算入（受贈側も全額益金不算入）となります。"
+            },
+            {
+                formNum: "別表十四（二）",
+                formName: "寄附金の損金算入に関する明細書",
+                question: "国や地方公共団体に対する寄附金（国等に対する寄附金）の限度額は？",
+                options: ["全額損金算入", "所得の2.5%まで"],
+                answer: 0,
+                note: "公益性が極めて高いため、全額損金算入されます。"
+            },
+            {
+                formNum: "別表十四（二）",
+                formName: "寄附金の損金算入に関する明細書",
+                question: "一般の寄附金の損金算入限度額の計算基準は？",
+                options: ["資本金等の額と所得金額", "売上高と従業員数"],
+                answer: 0,
+                note: "資本基準と所得基準の合計の1/4（または1/2）などで計算します。"
+            },
+
+            // --- 別表十五 ---
+            {
+                formNum: "別表十五",
+                formName: "交際費等の損金算入に関する明細書",
+                question: "中小法人が選択できる交際費の定額控除限度額は？",
+                options: ["年800万円", "年600万円"],
+                answer: 0,
+                note: "年800万円までの交際費を全額損金算入できる特例があります。"
+            },
+            {
+                formNum: "別表十五",
+                formName: "交際費等の損金算入に関する明細書",
+                question: "交際費等のうち、全額損金不算入となる「使途秘匿金」の支出に対するペナルティ税率は？",
+                options: ["40%の追加課税", "20%の追加課税"],
+                answer: 0,
+                note: "通常の法人税に加え、40%が別途課税されます。FP1級の実務知識。"
+            },
+            {
+                formNum: "別表十五",
+                formName: "交際費等の損金算入に関する明細書",
+                question: "1人あたり5,000円（令和6年度改正で1万円）以下の飲食費の取り扱いは？",
+                options: ["交際費等から除外（全額損金）", "交際費等に含める"],
+                answer: 0,
+                note: "所定の要件を満たせば「会議費」等として全額損金となり、別表十五の計算から除外できます。"
+            },
+
+            // --- 別表十六 ---
+            {
+                formNum: "別表十六",
+                formName: "減価償却資産の償却額の計算に関する明細書",
+                question: "中小企業者等の少額減価償却資産の特例（30万円未満）を適用するための別表は？",
+                options: ["別表十六（七）", "別表十六（一）"],
+                answer: 0,
+                note: "即時償却の特例適用には、別表十六（七）の添付が必要です。"
+            },
+            {
+                formNum: "別表十六",
+                formName: "減価償却資産の償却額の計算に関する明細書",
+                question: "償却超過額（会社計上＞税務限度）が出た場合の処理は？",
+                options: ["別表四で加算・留保", "別表四で減算・留保"],
+                answer: 0,
+                note: "限度額を超えた分は否認され、別表四で加算・留保し、翌期以降に認容を待ちます。"
+            },
+            {
+                formNum: "別表十六",
+                formName: "減価償却資産の償却額の計算に関する明細書",
+                question: "一括償却資産（20万円未満）の償却期間は？",
+                options: ["3年均等", "5年均等"],
+                answer: 0,
+                note: "3年間で均等償却します。別表十六（八）を使用します。"
+            }
+        ];
+
+        // --- 2. アプリの状態管理 ---
+        let state = {
+            screen: 'start', // start, quiz, result
+            currentQuestionIndex: 0,
+            score: 0,
+            shuffledQuestions: []
+        };
+
+        const app = document.getElementById('app');
+
+        // --- 3. レンダリング関数群 ---
+
+        function init() {
+            renderStart();
+        }
+
+        // スタート画面
+        function renderStart() {
+            app.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full space-y-8 py-10 fade-in">
+                    <div class="text-center space-y-2">
+                        <p class="text-sm font-bold tracking-widest text-zinc-500 uppercase">FP1 Grade Tax Law</p>
+                        <h1 class="text-4xl font-black tracking-tighter text-white">法人税<br>別表Master<br><span class="text-lg font-normal text-zinc-400">Input Edition</span></h1>
+                    </div>
+                    <div class="w-16 h-1 bg-white"></div>
+                    <p class="text-center text-sm text-zinc-400 leading-relaxed max-w-xs">
+                        11様式 × 3問 = 全33問。<br>
+                        正式名称と機能のリンクを<br>
+                        脳に刻み込む。
+                    </p>
+                    <button onclick="startQuiz()" class="w-full max-w-xs bg-zinc-900 text-white border-2 border-white font-bold py-4 px-8 bauhaus-shadow-dark btn-hover transition-transform text-lg tracking-widest hover:bg-zinc-800">
+                        START
+                    </button>
+                </div>
+            `;
+        }
+
+        function startQuiz() {
+            state.shuffledQuestions = [...quizData].sort(() => Math.random() - 0.5);
+            state.currentQuestionIndex = 0;
+            state.score = 0;
+            state.screen = 'quiz';
+            renderQuiz();
+        }
+
+        // クイズ画面（様式名称追加）
+        function renderQuiz() {
+            const q = state.shuffledQuestions[state.currentQuestionIndex];
+            const optionIndices = [0, 1].sort(() => Math.random() - 0.5);
+            const progress = ((state.currentQuestionIndex + 1) / state.shuffledQuestions.length) * 100;
+
+            app.innerHTML = `
+                <div class="flex flex-col h-full fade-in justify-between">
+                    <!-- Header with Form Info -->
+                    <div class="mb-4 border-b border-zinc-600 pb-4 flex justify-between items-start">
+                        <div>
+                            <div class="text-xs font-mono font-bold text-yellow-500 mb-1 tracking-widest uppercase">${q.formNum}</div>
+                            <div class="text-sm font-bold text-zinc-300 leading-tight">${q.formName}</div>
+                        </div>
+                        <button onclick="confirmExit()" class="text-xs font-bold underline text-zinc-500 hover:text-white transition-colors shrink-0 ml-4">TOP</button>
+                    </div>
+
+                    <!-- Question -->
+                    <div class="flex-grow flex flex-col justify-center mb-6">
+                        <h2 class="text-lg sm:text-xl font-bold leading-relaxed mb-4 text-white">
+                            ${q.question}
+                        </h2>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="space-y-3 mb-6">
+                        <button onclick="handleAnswer(${optionIndices[0]})" class="option-btn w-full text-left bg-[#18181b] border-2 border-[#52525b] text-zinc-200 p-4 font-bold text-base transition-colors bauhaus-shadow-sm-dark btn-hover flex justify-between items-center group">
+                            <span>${q.options[optionIndices[0]]}</span>
+                            <span class="opacity-0 group-hover:opacity-100 transition-opacity text-white">→</span>
+                        </button>
+                        <button onclick="handleAnswer(${optionIndices[1]})" class="option-btn w-full text-left bg-[#18181b] border-2 border-[#52525b] text-zinc-200 p-4 font-bold text-base transition-colors bauhaus-shadow-sm-dark btn-hover flex justify-between items-center group">
+                            <span>${q.options[optionIndices[1]]}</span>
+                            <span class="opacity-0 group-hover:opacity-100 transition-opacity text-white">→</span>
+                        </button>
+                    </div>
+
+                    <!-- Progress -->
+                    <div class="w-full bg-zinc-700 h-1 mt-2">
+                        <div class="bg-white h-1 transition-all duration-300" style="width: ${progress}%"></div>
+                    </div>
+                    <p class="text-right text-xs font-mono mt-1 text-zinc-500">Q.${state.currentQuestionIndex + 1} / ${state.shuffledQuestions.length}</p>
+                </div>
+            `;
+        }
+
+        // フィードバック画面
+        function handleAnswer(selectedIndex) {
+            const q = state.shuffledQuestions[state.currentQuestionIndex];
+            const isCorrect = selectedIndex === q.answer;
+
+            if (isCorrect) state.score++;
+
+            app.innerHTML = `
+                <div class="flex flex-col h-full justify-center items-center text-center fade-in space-y-6">
+                    <div class="text-5xl mb-2 text-white">${isCorrect ? '⭕' : '❌'}</div>
+                    <h3 class="text-xl font-bold text-white">${isCorrect ? 'Correct' : 'Incorrect'}</h3>
+                    
+                    <div class="bg-[#3f3f46] p-5 border-l-4 ${isCorrect ? 'border-white' : 'border-red-500'} text-left w-full shadow-lg">
+                        <div class="mb-2 pb-2 border-b border-zinc-500">
+                             <span class="text-xs font-mono text-yellow-500">${q.formNum}</span>
+                             <span class="text-xs text-zinc-400 block">${q.formName}</span>
+                        </div>
+                        <p class="text-xs text-zinc-400 font-bold mb-1">正解: <span class="text-white">${q.options[q.answer]}</span></p>
+                        <p class="text-sm font-medium leading-relaxed text-zinc-200">${q.note}</p>
+                    </div>
+
+                    <button onclick="nextQuestion()" class="w-full max-w-xs bg-zinc-900 text-white font-bold py-3 px-6 border-2 border-white bauhaus-shadow-dark btn-hover transition-transform hover:bg-zinc-800">
+                        NEXT
+                    </button>
+                </div>
+            `;
+        }
+
+        function nextQuestion() {
+            state.currentQuestionIndex++;
+            if (state.currentQuestionIndex < state.shuffledQuestions.length) {
+                renderQuiz();
+            } else {
+                renderResult();
+            }
+        }
+
+        // 結果画面
+        function renderResult() {
+            const percentage = Math.round((state.score / state.shuffledQuestions.length) * 100);
+            let message = "";
+            let colorClass = "text-white";
+
+            if (percentage === 100) {
+                message = "Perfect. 様式と機能が完全にリンクしています。";
+                colorClass = "text-yellow-500";
+            } else if (percentage >= 90) {
+                message = "Excellent. 安定した知識基盤です。";
+            } else if (percentage >= 70) {
+                message = "Good. 苦手な様式を重点的に復習しましょう。";
+            } else {
+                message = "Review Required. もう一度、様式名称から確認を。";
+            }
+
+            app.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full space-y-8 py-10 fade-in">
+                    <h2 class="text-3xl font-black tracking-tighter text-white">RESULT</h2>
+                    
+                    <div class="text-center">
+                        <div class="text-6xl font-black ${colorClass} mb-2">${state.score} <span class="text-2xl text-zinc-400">/ ${state.shuffledQuestions.length}</span></div>
+                        <p class="text-sm font-mono tracking-widest text-zinc-500">ACCURACY: ${percentage}%</p>
+                    </div>
+
+                    <div class="w-full bg-[#3f3f46] p-4 border-2 border-[#52525b]">
+                        <p class="text-center font-bold text-sm text-zinc-200">${message}</p>
+                    </div>
+
+                    <div class="flex flex-col w-full space-y-3">
+                        <button onclick="startQuiz()" class="w-full bg-zinc-900 text-white font-bold py-3 px-6 border-2 border-white bauhaus-shadow-dark btn-hover hover:bg-zinc-800">
+                            RETRY (Shuffle)
+                        </button>
+                        <button onclick="renderStart()" class="w-full bg-transparent text-white font-bold py-3 px-6 border-2 border-zinc-500 bauhaus-shadow-sm-dark btn-hover hover:bg-zinc-800">
+                            BACK TO TOP
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function confirmExit() {
+            if (confirm("現在の進行状況は失われます。トップに戻りますか？")) {
+                renderStart();
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
