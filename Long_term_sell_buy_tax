@@ -1,0 +1,266 @@
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Settings, Info, Calculator, Download, ArrowRight } from 'lucide-react';
+
+const App = () => {
+  // --- State Definitions (万円単位) ---
+  const [params, setParams] = useState({
+    salePrice: 10000,   // 売却価格 (A)
+    buyPrice: 8000,     // 買換価格 (B)
+    acquisition: 500,   // 取得費 (C)
+    transferCost: 400,  // 譲渡費用 (D)
+    deferralRate: 0.8,  // 繰延認定率 (デフォルト8割)
+  });
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // --- Logic Functions ---
+  const calc = useMemo(() => {
+    const totalCost = params.acquisition + params.transferCost;
+    const grossProfit = params.salePrice - totalCost;
+    
+    // 1. 繰延として認められる最大枠 (認定繰延額)
+    const recognizedDeferral = Math.floor(Math.min(params.salePrice, params.buyPrice) * params.deferralRate);
+    
+    // 2. 収入金額とみなす額 (売却価格から認定繰延額を引いた、現金化部分)
+    const taxableRevenue = Math.max(0, params.salePrice - recognizedDeferral);
+    
+    // 3. 現金化率 (本質的な比率)
+    const cashOutRatio = params.salePrice > 0 ? taxableRevenue / params.salePrice : 0;
+    
+    // 4. 課税譲渡所得 = 本来の利益 * 現金化率
+    const taxableIncome = Math.floor(grossProfit * cashOutRatio);
+
+    // 5. 新しい物件の引き継ぎ取得費 (将来のコスト)
+    // 認定繰延額に対応する元のコストを引き継ぐ
+    const inheritedCost = Math.floor(totalCost * (recognizedDeferral / params.salePrice));
+
+    return { totalCost, grossProfit, recognizedDeferral, taxableRevenue, cashOutRatio, taxableIncome, inheritedCost };
+  }, [params]);
+
+  // --- Canvas Renderer ---
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+    const pad = 40;
+    const gW = w - pad * 2;
+    const gH = h - pad * 2;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // 座標定義 (左下原点)
+    const oX = pad;
+    const oY = h - pad;
+
+    // スケール
+    const sY = gH / params.salePrice;
+    
+    // 分割ライン
+    const splitRatio = calc.recognizedDeferral / params.salePrice;
+    const wLeft = gW * splitRatio;
+    const wRight = gW * (1 - splitRatio);
+
+    const hCost = calc.totalCost * sY;
+    const hProfit = calc.grossProfit * sY;
+
+    // 1. グリッド (方眼)
+    ctx.strokeStyle = '#f1f5f9';
+    ctx.lineWidth = 1;
+    for(let i=0; i<=10; i++) {
+      ctx.beginPath();
+      ctx.moveTo(oX + (gW/10)*i, oY); ctx.lineTo(oX + (gW/10)*i, oY - gH);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(oX, oY - (gH/10)*i); ctx.lineTo(oX + gW, oY - (gH/10)*i);
+      ctx.stroke();
+    }
+
+    // 2. 描画: 繰延エリア (左)
+    ctx.fillStyle = '#f8fafc'; // 白に近いグレー
+    ctx.fillRect(oX, oY - hCost - hProfit, wLeft, hProfit);
+    ctx.fillStyle = '#e2e8f0'; // コスト色
+    ctx.fillRect(oX, oY - hCost, wLeft, hCost);
+
+    // 3. 描画: 課税エリア (右) - 青い部分
+    ctx.fillStyle = '#2563eb'; // シンプリストな青
+    ctx.fillRect(oX + wLeft, oY - hCost - hProfit, wRight, hProfit);
+    ctx.fillStyle = '#94a3b8'; // 課税側コスト
+    ctx.fillRect(oX + wLeft, oY - hCost, wRight, hCost);
+
+    // 4. 枠線
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(oX, oY - gH, gW, gH);
+    ctx.beginPath();
+    ctx.moveTo(oX + wLeft, oY); ctx.lineTo(oX + wLeft, oY - gH);
+    ctx.stroke();
+
+    // 5. テキストラベル
+    ctx.fillStyle = '#1e293b';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    
+    if (wRight > 60) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('課税所得', oX + wLeft + wRight/2, oY - hCost - hProfit/2);
+      ctx.fillText(`${calc.taxableIncome}万`, oX + wLeft + wRight/2, oY - hCost - hProfit/2 + 15);
+    }
+
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'right';
+    ctx.fillText('売却価格 100%', oX - 10, oY - gH + 5);
+    ctx.fillText('0', oX - 10, oY + 5);
+
+  }, [params, calc]);
+
+  return (
+    <div className="min-h-screen bg-[#fafafa] text-[#1a1a1a] p-4 md:p-8 font-sans selection:bg-blue-100">
+      <div className="max-w-6xl mx-auto">
+        {/* Header: Bauhaus Minimal Style */}
+        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between border-b border-black pb-4">
+          <div>
+            <h1 className="text-3xl font-light tracking-tighter uppercase">Tax Calculation Workbench</h1>
+            <p className="text-sm opacity-50 mt-1">居住用・事業用財産の買換え特例：幾何学的解析モデル</p>
+          </div>
+          <div className="text-xs font-mono opacity-40 mt-4 md:mt-0">
+            SYSTEM_v2.0 / RATIO_BASED_ANALYSIS
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          
+          {/* Left: Input Parameters */}
+          <div className="lg:col-span-4 space-y-8">
+            <section>
+              <h2 className="text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2">
+                <Settings size={14} /> Input Parameters
+              </h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between text-xs mb-2">
+                    <span>売却対価 (A)</span>
+                    <span className="font-mono">{params.salePrice.toLocaleString()}万</span>
+                  </div>
+                  <input type="range" min="1000" max="20000" step="100" 
+                    value={params.salePrice}
+                    onChange={e => setParams({...params, salePrice: Number(e.target.value)})}
+                    className="w-full accent-black cursor-ns-resize" />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-2">
+                    <span>買換取得価額 (B)</span>
+                    <span className="font-mono text-blue-600">{params.buyPrice.toLocaleString()}万</span>
+                  </div>
+                  <input type="range" min="0" max={params.salePrice + 2000} step="100" 
+                    value={params.buyPrice}
+                    onChange={e => setParams({...params, buyPrice: Number(e.target.value)})}
+                    className="w-full accent-blue-600" />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-2">
+                    <span>繰延認定率 (係数)</span>
+                    <span className="font-mono">{(params.deferralRate * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {[0.8, 0.9, 1.0].map(r => (
+                      <button key={r} 
+                        onClick={() => setParams({...params, deferralRate: r})}
+                        className={`flex-1 py-2 text-xs border ${params.deferralRate === r ? 'bg-black text-white border-black' : 'border-gray-200 hover:border-black'}`}>
+                        {r === 1.0 ? '全額' : `${r*100}%`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="flex justify-between text-xs mb-2 text-gray-400">
+                    <span>取得費 + 譲渡費用</span>
+                    <span>{(params.acquisition + params.transferCost).toLocaleString()}万</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <input type="number" value={params.acquisition} 
+                      onChange={e => setParams({...params, acquisition: Number(e.target.value)})}
+                      className="bg-transparent border-b border-gray-300 py-1 text-sm focus:border-black outline-none" placeholder="取得費" />
+                    <input type="number" value={params.transferCost} 
+                      onChange={e => setParams({...params, transferCost: Number(e.target.value)})}
+                      className="bg-transparent border-b border-gray-300 py-1 text-sm focus:border-black outline-none" placeholder="譲渡費用" />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Analysis Summary */}
+            <section className="bg-black text-white p-6 space-y-4">
+              <h2 className="text-[10px] uppercase tracking-[0.2em] opacity-50">Calculation Summary</h2>
+              <div className="flex justify-between items-baseline">
+                <span className="text-xs opacity-70">現金化率</span>
+                <span className="text-xl font-light">{(calc.cashOutRatio * 100).toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between items-baseline pt-2 border-t border-white/20">
+                <span className="text-xs font-bold text-blue-400">課税譲渡所得</span>
+                <span className="text-3xl font-light tracking-tighter">{calc.taxableIncome.toLocaleString()} <span className="text-xs uppercase">JPY(w)</span></span>
+              </div>
+            </section>
+          </div>
+
+          {/* Right: Visualization & Geometry */}
+          <div className="lg:col-span-8">
+            <div className="bg-white border border-gray-200 p-8 h-full flex flex-col">
+              <div className="flex justify-between items-start mb-8">
+                <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                  <Calculator size={14} /> Geometric Model
+                </h2>
+                <div className="flex gap-4 text-[10px] uppercase text-gray-400">
+                  <div className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-600"></span> Realized Profit</div>
+                  <div className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-200"></span> Deferred Assets</div>
+                </div>
+              </div>
+
+              <div className="flex-grow relative min-h-[400px]">
+                <canvas ref={canvasRef} className="w-full h-full" />
+              </div>
+
+              <div className="mt-8 grid grid-cols-2 gap-12 text-xs border-t border-gray-100 pt-8">
+                <div>
+                  <h3 className="font-bold mb-2 uppercase tracking-tighter">1. 現金化部分（今、払う）</h3>
+                  <p className="text-gray-500 leading-relaxed">
+                    売却額のうち再投資に回さなかった（認定枠外の） **{calc.taxableRevenue.toLocaleString()}万円** に含まれる利益
+                    **{calc.taxableIncome.toLocaleString()}万円** が今回の課税対象です。
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-bold mb-2 uppercase tracking-tighter">2. 次世代への宿題（将来、払う）</h3>
+                  <p className="text-gray-500 leading-relaxed">
+                    繰延べた利益は消滅しません。新物件の取得費は **{calc.inheritedCost.toLocaleString()}万円** に圧縮され、将来の売却時に今回の「未払分」が合算されます。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer info */}
+        <footer className="mt-16 text-[10px] text-gray-400 flex justify-between uppercase tracking-widest">
+          <span>Formula: G * ((A - (B * r)) / A)</span>
+          <span>Designed for Simplists / Shinjuku-City Studio</span>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+export default App;
