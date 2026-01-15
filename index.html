@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Study Portal</title>
+    <!-- 日本語フォントを美しく表示するためにNoto Sans JPを追加 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -19,30 +23,44 @@
         body {
             background-color: var(--base3);
             color: var(--base00);
-            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: center; /* 画面の高さが足りない場合はスクロール時に上部が切れないよう注意が必要ですが、今回はmin-height対応 */
             min-height: 100vh;
             margin: 0;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
 
         /* コンテナ */
         .app-container {
             width: 100%;
             max-width: 520px;
-            padding: 2rem;
+            padding: 0;
         }
 
-        /* タイトル */
+        /* メインタイトル */
         h1 {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--base1);
             text-transform: uppercase;
-            letter-spacing: 0.2em;
-            border-bottom: 2px solid var(--base2);
-            padding-bottom: 0.5rem;
-            margin-bottom: 2rem;
+            letter-spacing: 0.25em;
+            border-bottom: 1px solid var(--base2);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        /* カテゴリー見出し */
+        h2 {
+            font-size: 0.7rem;
+            color: var(--base1);
+            margin-top: 2rem;
+            margin-bottom: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            padding-left: 0.2rem;
         }
 
         /* リスト */
@@ -51,23 +69,26 @@
 
         /* カード（リンク） */
         a {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             background-color: white;
-            padding: 1.5rem 2rem;
+            padding: 1.1rem 1.5rem;
             color: var(--base01);
             text-decoration: none;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             position: relative;
             overflow: hidden;
         }
 
         /* ホバー時の挙動 */
         a:hover {
-            transform: translateX(5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.06);
             color: var(--base02);
+            padding-left: 1.8rem;
         }
 
         /* 左側のアクセントカラーバー */
@@ -77,84 +98,119 @@
             top: 0;
             bottom: 0;
             width: 4px;
-            background-color: var(--base2); /* デフォルト */
-            transition: background-color 0.2s;
+            background-color: var(--base2);
+            transition: width 0.2s;
+        }
+        
+        a:hover .color-bar {
+            width: 6px;
         }
 
-        .arrow { float: right; opacity: 0; transition: opacity 0.2s; }
-        a:hover .arrow { opacity: 1; }
+        .title-text {
+            font-weight: 500;
+            font-size: 1rem;
+            z-index: 1;
+        }
+
+        .arrow { 
+            font-size: 1.1rem;
+            opacity: 0; 
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+            color: var(--base1);
+        }
+        
+        a:hover .arrow { 
+            opacity: 1; 
+            transform: translateX(0);
+        }
     </style>
 </head>
 <body>
 
     <div class="app-container">
         <h1>Study Modules</h1>
-        <ul id="quiz-list-root">
-            <!-- JSによってリストがここに生成されます -->
-        </ul>
+        <div id="module-list-root">
+            <!-- JSによってここにカテゴリーとリストが生成されます -->
+        </div>
     </div>
 
     <script>
         // ---------------------------------------------------------
-        // 1. DATA LAYER: クイズアプリ定義
+        // DATA LAYER: カテゴリーごとのアプリ定義
         // ---------------------------------------------------------
-        const QUIZ_APPS = [
-            { 
-                title: "Data Science Quiz", 
-                url:   "DS_Quiz.html", 
-                color: "var(--magenta)" // 分析・理論
+        const MODULE_DATA = [
+            {
+                category: "Data & Analysis",
+                items: [
+                    { title: "Data Science Quiz", url: "DS_Quiz.html", color: "var(--magenta)" },
+                    { title: "R Programming Quiz", url: "R_Quiz.html", color: "var(--blue)" },
+                    { title: "Data Management", url: "Data_Management.html", color: "var(--violet)" }
+                ]
             },
-            { 
-                title: "R Programming Quiz", 
-                url:   "R_Quiz.html", 
-                color: "var(--blue)"    // プログラミング・実装
+            {
+                category: "Finance & Economics",
+                items: [
+                    { title: "FOMC Master", url: "FOMC_Master.html", color: "var(--green)" },
+                    { title: "FP1 Portfolio Strategy", url: "FP1_Portfolio.html", color: "var(--cyan)" },
+                    { title: "FP1 Pension System", url: "FP1_Pension.html", color: "var(--cyan)" },
+                    { title: "FP1 Financial Assets", url: "FP1_FAR.html", color: "var(--cyan)" }
+                ]
             },
-            { 
-                title: "Data Management", 
-                url:   "Data_Management.html", 
-                color: "var(--orange)"  // 構造・管理
-            },
-            { 
-                title: "FOMC Master", 
-                url:   "FOMC_Master.html", // ディレクトリ構造と想定
-                color: "var(--green)"   // 金融・経済
+            {
+                category: "Taxation",
+                items: [
+                    { title: "Corporate Tax Master", url: "Corporate_tax_master.html", color: "var(--orange)" },
+                    { title: "Long-term Tax Sim", url: "Long_term_sell_buy_tax.html", color: "var(--yellow)" }
+                ]
             }
         ];
 
         // ---------------------------------------------------------
-        // 2. ENGINE LAYER: インターフェース生成
+        // ENGINE LAYER: インターフェース生成
         // ---------------------------------------------------------
         document.addEventListener('DOMContentLoaded', () => {
-            const rootElement = document.getElementById('quiz-list-root');
+            const rootElement = document.getElementById('module-list-root');
 
-            QUIZ_APPS.forEach(app => {
-                const li = document.createElement('li');
-                
-                // リンク要素を作成
-                const link = document.createElement('a');
-                link.href = app.url;
-                
-                // カラーバー作成
-                const colorBar = document.createElement('div');
-                colorBar.className = 'color-bar';
-                colorBar.style.backgroundColor = app.color; 
+            MODULE_DATA.forEach(group => {
+                // 1. カテゴリーヘッダー生成
+                const h2 = document.createElement('h2');
+                h2.textContent = group.category;
+                rootElement.appendChild(h2);
 
-                // テキストノード
-                const textNode = document.createTextNode(app.title);
+                // 2. リストコンテナ生成
+                const ul = document.createElement('ul');
 
-                // 矢印
-                const arrowSpan = document.createElement('span');
-                arrowSpan.className = 'arrow';
-                arrowSpan.textContent = '→';
+                // 3. 各アイテム生成
+                group.items.forEach(app => {
+                    const li = document.createElement('li');
+                    
+                    const link = document.createElement('a');
+                    link.href = app.url;
+                    
+                    // カラーバー
+                    const colorBar = document.createElement('div');
+                    colorBar.className = 'color-bar';
+                    colorBar.style.backgroundColor = app.color; 
 
-                // 組み立て
-                link.appendChild(colorBar);
-                link.appendChild(textNode);
-                link.appendChild(arrowSpan);
-                li.appendChild(link);
+                    // テキスト
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'title-text';
+                    textSpan.textContent = app.title;
 
-                // レンダリング
-                rootElement.appendChild(li);
+                    // 矢印
+                    const arrowSpan = document.createElement('span');
+                    arrowSpan.className = 'arrow';
+                    arrowSpan.textContent = '→';
+
+                    link.appendChild(colorBar);
+                    link.appendChild(textSpan);
+                    link.appendChild(arrowSpan);
+                    li.appendChild(link);
+                    ul.appendChild(li);
+                });
+
+                rootElement.appendChild(ul);
             });
         });
     </script>
