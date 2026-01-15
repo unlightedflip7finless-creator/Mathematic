@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FP1級 延べ面積算定シート</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        /* 印刷用最適化：背景なし・1枚集約 */
+        @media print {
+            body { background: none !important; color: black !important; padding: 0 !important; }
+            .no-print { display: none !important; }
+            .printable-page {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 10mm !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            /* 背景色と影を強制排除 */
+            * {
+                background: transparent !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+            }
+            h2 { border-bottom: 1px solid black !important; }
+            .bg-slate-800, .bg-rose-600, .bg-gray-50 { border: 1px solid #ccc !important; }
+            @page { size: A4 portrait; margin: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-4 px-4">
+
+    <div class="max-w-4xl mx-auto printable-page bg-white shadow-xl rounded-xl p-8 border">
+        <div class="flex justify-between items-center border-b-2 border-gray-800 pb-2 mb-4">
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">建築基準法：最大延べ面積算定書</h1>
+                <p class="text-[10px] text-gray-500 italic">FP1級 技能検定対策（セットバック・特定道路緩和対応）</p>
+            </div>
+            <button onclick="window.print()" class="no-print bg-gray-800 hover:bg-black text-white font-bold py-1.5 px-5 rounded text-sm transition shadow-md">
+                A4縦 PDF出力 / 印刷
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 no-print mb-6">
+            <div class="space-y-3 p-3 bg-slate-50 rounded border text-xs">
+                <h3 class="font-bold border-l-4 border-rose-500 pl-2">敷地・接道条件</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <label>間口(X) m <input type="number" id="widthX" value="20" class="w-full p-1 border rounded"></label>
+                    <label>奥行(Y) m <input type="number" id="depthY" value="25" class="w-full p-1 border rounded"></label>
+                </div>
+                <div class="flex gap-4 text-[10px]">
+                    <label class="cursor-pointer"><input type="checkbox" id="roadOnX" checked> 道路Aは間口に接す</label>
+                    <label class="cursor-pointer"><input type="checkbox" id="roadOnY" checked> 道路Bは奥行に接す</label>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <label>道路A(主) m <input type="number" id="roadA" value="8.0" step="0.1" class="w-full p-1 border rounded"></label>
+                    <label>道路B(副) m <input type="number" id="roadB" value="3.6" step="0.1" class="w-full p-1 border rounded"></label>
+                </div>
+                <label class="flex items-center gap-2 font-bold text-emerald-800 cursor-pointer">
+                    <input type="checkbox" id="isRiverB" class="w-4 h-4"> 道路Bの対岸が川・崖等
+                </label>
+            </div>
+
+            <div class="space-y-3 p-3 bg-slate-50 rounded border text-xs">
+                <h3 class="font-bold border-l-4 border-rose-500 pl-2">緩和・容積率</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <label>特定道路 $W_r$ <input type="number" id="Wr" value="15.0" class="w-full p-1 border rounded"></label>
+                    <label>特定道路距離 $L$ <input type="number" id="L" value="30.0" class="w-full p-1 border rounded"></label>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <label>指定容積率 % <input type="number" id="baseFAR" value="300" class="w-full p-1 border rounded font-bold"></label>
+                    <label>法定乗数 <select id="multiplier" class="w-full p-1 border rounded font-bold"><option value="0.4">4/10</option><option value="0.6" selected>6/10</option></select></label>
+                </div>
+                <div class="bg-gray-100 p-2 rounded border border-gray-300 text-center">
+                    <p class="text-[10px]">最大延べ面積（概算値）</p>
+                    <p class="text-xl font-black" id="resTotal">-- ㎡</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="printArea" class="space-y-6">
+            <section>
+                <h2 class="text-sm font-bold border-b-2 border-gray-300 pb-1 mb-2 text-gray-800">1. 有効敷地面積の算定</h2>
+                <div id="step1" class="pl-2 text-[11px] space-y-1"></div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-bold border-b-2 border-gray-300 pb-1 mb-2 text-gray-800">2. 特定道路緩和の計算過程 ($W_a$)</h2>
+                <div id="step2" class="pl-4 text-[11px] leading-loose border-l-2 border-gray-100 italic">
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-bold border-b-2 border-gray-300 pb-1 mb-2 text-gray-800">3. 最大延べ面積の算定</h2>
+                <div id="step3" class="pl-2 text-[11px] space-y-1"></div>
+            </section>
+        </div>
+
+        <div class="mt-8 p-4 border-2 border-black rounded text-center">
+            <p class="text-xs font-bold uppercase mb-1">最終判定：最大延べ面積</p>
+            <p class="text-3xl font-black" id="finalResText">-- ㎡</p>
+        </div>
+
+        <div class="mt-4 text-[9px] text-gray-400 text-center">
+            ※本算定書は建築基準法第52条に基づき、前面道路制限と特定道路緩和を適用したものです。
+        </div>
+    </div>
+
+    <script>
+        function update() {
+            const widthX = parseFloat(document.getElementById('widthX').value) || 0;
+            const depthY = parseFloat(document.getElementById('depthY').value) || 0;
+            const roadA = parseFloat(document.getElementById('roadA').value) || 0;
+            const roadB = parseFloat(document.getElementById('roadB').value) || 0;
+            const roadOnX = document.getElementById('roadOnX').checked;
+            const roadOnY = document.getElementById('roadOnY').checked;
+            const isRiverB = document.getElementById('isRiverB').checked;
+            const baseFAR = parseFloat(document.getElementById('baseFAR').value) || 0;
+            const mult = parseFloat(document.getElementById('multiplier').value);
+            const Wr = parseFloat(document.getElementById('Wr').value) || 0;
+            const L = parseFloat(document.getElementById('L').value) || 0;
+
+            // 1. 有効敷地面積
+            let sbB_dist = 0;
+            let sbB_desc = "なし";
+            if (roadB < 4 && roadOnY) {
+                if (isRiverB) {
+                    sbB_dist = (4.0 - roadB);
+                    sbB_desc = `川等に接するため片側後退 $4.0m - ${roadB}m = ${sbB_dist}m$`;
+                } else {
+                    sbB_dist = (4.0 - roadB) / 2;
+                    sbB_desc = `中心線より後退 $(4.0m - ${roadB}m) \div 2 = ${sbB_dist}m$`;
+                }
+            }
+            const sbArea = depthY * sbB_dist;
+            const effArea = (widthX * depthY) - sbArea;
+
+            document.getElementById('step1').innerHTML = `
+                <p>・敷地面積合計： $${widthX}m \times ${depthY}m = ${widthX * depthY}㎡$</p>
+                <p>・道路B後退距離： ${sbB_desc}</p>
+                <p>・セットバック除外面積： $${depthY}m \times ${sbB_dist.toFixed(2)}m = ${sbArea.toFixed(2)}㎡$</p>
+                <p>・有効敷地面積： <b class="text-base">${effArea.toFixed(2)}㎡</b></p>
+            `;
+
+            // 2. Wa
+            const maxW = Math.max(roadA, 4.0, roadB);
+            let Wa = 0;
+            let waHTML = "";
+            if (Wr >= 15 && L <= 70 && maxW >= 6 && maxW < 12) {
+                Wa = ((12 - maxW) * (70 - L)) / 70;
+                waHTML = `
+                    <p>① 数値代入： $W_a = \frac{(12 - ${maxW.toFixed(1)}) \times (70 - ${L})}{70}$</p>
+                    <p>② 展開： $W_a = \frac{${(12 - maxW).toFixed(1)} \times ${(70 - L).toFixed(1)}}{70} = \frac{${((12 - maxW) * (70 - L)).toFixed(2)}}{70}$</p>
+                    <p>③ 算出： $W_a = $ <b class="text-sm">${Wa.toFixed(4)}</b></p>
+                `;
+            } else {
+                waHTML = "<p>特定道路緩和要件を満たさないため $W_a = 0$ と判定。</p>";
+            }
+            document.getElementById('step2').innerHTML = waHTML;
+
+            // 3. Final
+            const roadLimitFAR = (maxW + Wa) * mult * 100;
+            const finalFAR = Math.min(baseFAR, roadLimitFAR);
+            const totalFloorArea = effArea * (finalFAR / 100);
+
+            document.getElementById('step3').innerHTML = `
+                <p>・道路制限容積率： $(前面道路 ${maxW.toFixed(1)}m + 緩和 ${Wa.toFixed(4)}m) \times ${mult} \times 100 = ${roadLimitFAR.toFixed(2)}\%$</p>
+                <p>・採用容積率： 指定 $${baseFAR}\%$ と 道路制限 $${roadLimitFAR.toFixed(2)}\%$ のうち小さい方の <b>${finalFAR.toFixed(2)}\%</b></p>
+                <p>・最大延べ面積： $${effArea.toFixed(2)}㎡ \times ${finalFAR.toFixed(2)}\% = ${totalFloorArea.toFixed(2)}㎡$</p>
+            `;
+            
+            const resultText = totalFloorArea.toFixed(2) + " ㎡";
+            document.getElementById('resTotal').innerText = resultText;
+            document.getElementById('finalResText').innerText = resultText;
+
+            if (window.MathJax && window.MathJax.typesetPromise) window.MathJax.typesetPromise();
+        }
+
+        ['widthX', 'depthY', 'roadA', 'roadB', 'roadOnX', 'roadOnY', 'isRiverB', 'baseFAR', 'multiplier', 'Wr', 'L'].forEach(id => {
+            document.getElementById(id).addEventListener('input', update);
+            document.getElementById(id).addEventListener('change', update);
+        });
+        window.onload = update;
+    </script>
+</body>
+</html>
