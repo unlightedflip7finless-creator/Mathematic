@@ -1,5 +1,7 @@
 # Web Study Portal
 
+**[Public Access](https://chess-r-quarto.github.io/Web_Study/)**
+
 A minimalist portal for accessing various study modules, designed with **Solarized Light** aesthetics.  
 This structure prioritizes typography, whitespace, and functionality, adhering to Bauhaus principles.
 
