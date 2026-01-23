@@ -1,0 +1,510 @@
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Calculator, Users, AlertCircle, Info, Plus, Minus, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+
+// --- KaTeX Loader & Component ---
+const loadKaTeX = () => {
+  if (document.getElementById('katex-css')) return;
+
+  const link = document.createElement('link');
+  link.id = 'katex-css';
+  link.rel = 'stylesheet';
+  link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+  document.head.appendChild(link);
+
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
+  script.async = true;
+  document.head.appendChild(script);
+};
+
+const Latex = ({ tex, className = "" }) => {
+  const containerRef = useRef(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    loadKaTeX();
+    const checkKaTeX = setInterval(() => {
+      if (window.katex) {
+        setIsLoaded(true);
+        clearInterval(checkKaTeX);
+      }
+    }, 100);
+    return () => clearInterval(checkKaTeX);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded && containerRef.current && window.katex) {
+      try {
+        window.katex.render(tex, containerRef.current, {
+          throwOnError: false,
+          displayMode: true,
+        });
+      } catch (e) {
+        console.error("KaTeX render error:", e);
+      }
+    }
+  }, [tex, isLoaded]);
+
+  return <div ref={containerRef} className={`overflow-x-auto overflow-y-hidden ${className}`} />;
+};
+
+// --- Logic & Constants ---
+
+const generalTaxRates = [
+  { limit: 200, rate: 0.10, deduction: 0 },
+  { limit: 300, rate: 0.15, deduction: 10 },
+  { limit: 400, rate: 0.20, deduction: 25 },
+  { limit: 600, rate: 0.30, deduction: 65 },
+  { limit: 1000, rate: 0.40, deduction: 125 },
+  { limit: 1500, rate: 0.45, deduction: 175 },
+  { limit: 3000, rate: 0.50, deduction: 250 },
+  { limit: Infinity, rate: 0.55, deduction: 400 },
+];
+
+const specialTaxRates = [
+  { limit: 200, rate: 0.10, deduction: 0 },
+  { limit: 400, rate: 0.15, deduction: 10 },
+  { limit: 600, rate: 0.20, deduction: 30 },
+  { limit: 1000, rate: 0.30, deduction: 90 },
+  { limit: 1500, rate: 0.40, deduction: 190 },
+  { limit: 3000, rate: 0.45, deduction: 265 },
+  { limit: 4500, rate: 0.50, deduction: 415 },
+  { limit: Infinity, rate: 0.55, deduction: 640 },
+];
+
+const calculateTax = (amount, rates) => {
+  const bracket = rates.find(r => amount <= r.limit) || rates[rates.length - 1];
+  return {
+    tax: (amount * bracket.rate) - bracket.deduction,
+    rate: bracket.rate,
+    deduction: bracket.deduction
+  };
+};
+
+// --- Components ---
+
+const Card = ({ title, icon: Icon, children, className = "" }) => (
+  <div className={`bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${className}`}>
+    <div className="flex items-center gap-3 mb-6 border-b-2 border-black pb-2">
+      <Icon className="w-6 h-6" />
+      <h2 className="text-xl font-bold tracking-tight uppercase">{title}</h2>
+    </div>
+    {children}
+  </div>
+);
+
+const NumberInput = ({ label, value, onChange, placeholder }) => (
+  <div className="flex flex-col gap-1">
+    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">{label}</label>
+    <div className="relative">
+      <input
+        type="number"
+        value={value === 0 ? '' : value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        placeholder={placeholder}
+        className="w-full bg-gray-50 border-2 border-gray-200 p-3 text-lg font-mono focus:border-black focus:outline-none transition-colors"
+      />
+      <span className="absolute right-4 top-3.5 text-gray-400 font-bold pointer-events-none">万円</span>
+    </div>
+  </div>
+);
+
+const Counter = ({ label, value, onChange, min = 0, max = 10, helperText }) => (
+  <div className="flex flex-col gap-2">
+    <div className="flex justify-between items-end">
+        <label className="text-xs font-bold uppercase tracking-wider text-gray-500">{label}</label>
+        {helperText && <span className="text-[10px] text-gray-400">{helperText}</span>}
+    </div>
+    <div className="flex items-center gap-3 bg-gray-50 p-2 border-2 border-gray-200">
+      <button 
+        onClick={() => onChange(Math.max(min, value - 1))}
+        disabled={value <= min}
+        className="w-10 h-10 flex items-center justify-center bg-white border-2 border-gray-300 hover:border-black hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-300 transition-all rounded-full"
+      >
+        <Minus className="w-5 h-5" />
+      </button>
+      
+      <div className="flex-1 text-center">
+        <span className="text-2xl font-mono font-bold tracking-tighter">{value}</span>
+        <span className="text-xs ml-1 text-gray-400">名</span>
+      </div>
+
+      <button 
+        onClick={() => onChange(Math.min(max, value + 1))}
+        disabled={value >= max}
+        className="w-10 h-10 flex items-center justify-center bg-white border-2 border-gray-300 hover:border-black hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-300 transition-all rounded-full"
+      >
+        <Plus className="w-5 h-5" />
+      </button>
+    </div>
+  </div>
+);
+
+// --- Main App ---
+
+export default function TaxCalculator() {
+  // State: Gift Tax
+  const [specialGift, setSpecialGift] = useState(400);
+  const [generalGift, setGeneralGift] = useState(100);
+  const [showGiftLogic, setShowGiftLogic] = useState(true);
+  
+  // State: Inheritance
+  const [spouse, setSpouse] = useState(true);
+  const [biologicalChildren, setBiologicalChildren] = useState(2);
+  const [adoptedChildren, setAdoptedChildren] = useState(1);
+  const [hasBiologicalChild, setHasBiologicalChild] = useState(true);
+  const [showInheritanceLogic, setShowInheritanceLogic] = useState(true);
+
+  // Effect: Sync biological child flag
+  useEffect(() => {
+    setHasBiologicalChild(biologicalChildren > 0);
+  }, [biologicalChildren]);
+
+  // Logic: Gift Tax
+  const giftResults = useMemo(() => {
+    const totalGift = specialGift + generalGift;
+    const basicDeduction = 110;
+    const taxableAmount = Math.max(0, totalGift - basicDeduction);
+    
+    if (taxableAmount <= 0) return null;
+
+    const specialRatio = totalGift > 0 ? specialGift / totalGift : 0;
+    const generalRatio = totalGift > 0 ? generalGift / totalGift : 0;
+
+    const specialCalc = calculateTax(taxableAmount, specialTaxRates);
+    const generalCalc = calculateTax(taxableAmount, generalTaxRates);
+
+    const specialTax = specialCalc.tax * specialRatio;
+    const generalTax = generalCalc.tax * generalRatio;
+    const totalTax = specialTax + generalTax;
+
+    // LaTeX Strings
+    const texFormula = `
+      \\begin{aligned}
+      \\text{課税価格} &= ${specialGift} + ${generalGift} - 110 = ${taxableAmount.toFixed(1)} \\text{万円} \\\\
+      \\text{特例分} &= (${taxableAmount} \\times ${specialCalc.rate} - ${specialCalc.deduction}) \\times \\frac{${specialGift}}{${totalGift}} \\\\
+      &= ${specialCalc.tax.toFixed(4)} \\times ${(specialRatio).toFixed(2)} = ${specialTax.toFixed(4)} \\\\
+      \\text{一般分} &= (${taxableAmount} \\times ${generalCalc.rate} - ${generalCalc.deduction}) \\times \\frac{${generalGift}}{${totalGift}} \\\\
+      &= ${generalCalc.tax.toFixed(4)} \\times ${(generalRatio).toFixed(2)} = ${generalTax.toFixed(4)} \\\\
+      \\text{合計税額} &= ${specialTax.toFixed(4)} + ${generalTax.toFixed(4)} = \\mathbf{${totalTax.toFixed(4)}} \\text{万円}
+      \\end{aligned}
+    `;
+
+    return {
+      taxableAmount,
+      specialRatio,
+      generalRatio,
+      specialCalc,
+      generalCalc,
+      specialTax,
+      generalTax,
+      totalTax,
+      texFormula
+    };
+  }, [specialGift, generalGift]);
+
+  // Logic: Inheritance Deduction
+  const inheritanceResults = useMemo(() => {
+    const maxAdopted = hasBiologicalChild ? 1 : 2;
+    const countedAdopted = Math.min(adoptedChildren, maxAdopted);
+    const heirCount = (spouse ? 1 : 0) + biologicalChildren + countedAdopted;
+    const basicDeduction = 3000 + (600 * heirCount);
+
+    // LaTeX String
+    const texFormula = `
+      \\begin{aligned}
+       \\text{法定相続人} &= ${spouse ? '1(\\text{配})' : '0'} + ${biologicalChildren}(\\text{実}) + \\min(${adoptedChildren}, ${maxAdopted})(\\text{養}) \\\\
+       &= ${heirCount} \\text{人} \\\\
+       \\text{基礎控除} &= 3,000 + (600 \\times ${heirCount}) \\\\
+       &= \\mathbf{${basicDeduction.toLocaleString()}} \\text{万円}
+      \\end{aligned}
+    `;
+    
+    return {
+      heirCount,
+      countedAdopted,
+      maxAdopted,
+      basicDeduction,
+      texFormula
+    };
+  }, [spouse, biologicalChildren, adoptedChildren, hasBiologicalChild]);
+
+  // Logic: 20% Surcharge Visualizer State
+  const [selectedRel, setSelectedRel] = useState(null);
+
+  const relationships = [
+    { id: 'spouse', label: '配偶者', x: 150, y: 80, type: 'spouse', surcharge: false },
+    { id: 'child1', label: '子C (実子)', x: 50, y: 180, type: 'blood1', surcharge: false },
+    { id: 'child2', label: '子D (実子)', x: 150, y: 180, type: 'blood1', surcharge: false },
+    { id: 'child3', label: '子E (死亡)', x: 250, y: 180, type: 'dead', surcharge: null },
+    { id: 'grandchild1', label: '孫F (養子)', x: 50, y: 280, type: 'adopt', surcharge: true },
+    { id: 'grandchild2', label: '孫G (代襲)', x: 250, y: 280, type: 'daishu', surcharge: false },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#f4f4f0] text-gray-900 font-sans selection:bg-yellow-200 pb-20">
+      <header className="bg-black text-white p-6 sticky top-0 z-20 shadow-md">
+        <div className="max-w-5xl mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold tracking-tighter flex items-center gap-2">
+            <Calculator className="w-6 h-6" />
+            TAX LAW CALCULATOR
+          </h1>
+          <span className="text-xs font-mono tracking-widest opacity-70 hidden sm:block">FP 1st GRADE EDITION</span>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        {/* --- LEFT COLUMN: GIFT TAX --- */}
+        <div className="space-y-8">
+          <Card title="Gift Tax Calculation" icon={Info} className="h-full relative overflow-hidden">
+            <div className="space-y-6">
+              <div className="bg-yellow-50 p-4 border-l-4 border-yellow-400 text-sm mb-6">
+                <p className="font-bold mb-1">贈与税額控除の按分計算</p>
+                <p className="text-gray-600">特例贈与財産と一般贈与財産がある場合、それぞれの割合に応じて税額を算出します。</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <NumberInput 
+                  label="特例贈与 (直系尊属)" 
+                  value={specialGift} 
+                  onChange={setSpecialGift} 
+                />
+                <NumberInput 
+                  label="一般贈与 (その他)" 
+                  value={generalGift} 
+                  onChange={setGeneralGift} 
+                />
+              </div>
+
+              {giftResults ? (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+                   {/* Visualization Bar */}
+                   <div className="h-4 flex w-full border border-black mt-4">
+                    <div 
+                      style={{ width: `${giftResults.specialRatio * 100}%` }} 
+                      className="bg-blue-600 h-full transition-all duration-500 relative group"
+                    >
+                        <span className="absolute -top-6 left-0 text-xs font-bold text-blue-800 opacity-0 group-hover:opacity-100 transition-opacity">特例 {(giftResults.specialRatio * 100).toFixed(0)}%</span>
+                    </div>
+                    <div 
+                      style={{ width: `${giftResults.generalRatio * 100}%` }} 
+                      className="bg-gray-400 h-full transition-all duration-500 relative group"
+                    >
+                        <span className="absolute -top-6 right-0 text-xs font-bold text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">一般 {(giftResults.generalRatio * 100).toFixed(0)}%</span>
+                    </div>
+                  </div>
+
+                  {/* Logic View Switch */}
+                  <button 
+                    onClick={() => setShowGiftLogic(!showGiftLogic)}
+                    className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200 pb-2 hover:text-black transition-colors"
+                  >
+                    <span>Calculation Logic (LaTeX)</span>
+                    {showGiftLogic ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+
+                  {/* LaTeX Output */}
+                  {showGiftLogic && (
+                    <div className="bg-gray-50 p-4 border border-gray-200 rounded-sm">
+                      <Latex tex={giftResults.texFormula} />
+                    </div>
+                  )}
+
+                  {/* Total Result */}
+                  <div className="flex items-end justify-between border-t-2 border-black pt-4">
+                    <span className="text-lg font-bold">TOTAL TAX</span>
+                    <div className="text-right">
+                      <span className="text-4xl font-bold tracking-tighter block">
+                        {Math.floor(giftResults.totalTax * 10000).toLocaleString()} <span className="text-sm font-normal text-gray-500">円</span>
+                      </span>
+                      <span className="text-xs text-gray-400 font-mono">
+                        ({giftResults.totalTax.toFixed(4)} 万円)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 font-mono">
+                  基礎控除以下です
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* --- RIGHT COLUMN: INHERITANCE --- */}
+        <div className="space-y-8">
+          
+          {/* Section 2: Basic Deduction */}
+          <Card title="Basic Deduction" icon={Users}>
+            <div className="space-y-8">
+              
+              {/* Controls */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between bg-gray-50 p-4 border border-gray-200">
+                  <span className="text-sm font-bold uppercase tracking-wider">配偶者の有無</span>
+                  <button 
+                    onClick={() => setSpouse(!spouse)}
+                    className={`
+                        w-12 h-12 rounded-full border-2 font-bold transition-all flex items-center justify-center
+                        ${spouse ? 'bg-black text-white border-black' : 'bg-white text-gray-300 border-gray-200 hover:border-gray-400'}
+                    `}
+                  >
+                    {spouse ? <Check className="w-6 h-6" /> : <Minus className="w-6 h-6" />}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <Counter 
+                    label="実子の数"
+                    value={biologicalChildren}
+                    onChange={(val) => {
+                        setBiologicalChildren(val);
+                        setHasBiologicalChild(val > 0);
+                    }}
+                    helperText="制限なし"
+                  />
+                  
+                  <Counter 
+                    label="養子の数"
+                    value={adoptedChildren}
+                    onChange={setAdoptedChildren}
+                    helperText={hasBiologicalChild ? "上限1名" : "上限2名"}
+                  />
+                </div>
+              </div>
+
+               {/* Logic View Switch */}
+               <button 
+                  onClick={() => setShowInheritanceLogic(!showInheritanceLogic)}
+                  className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200 pb-2 hover:text-black transition-colors"
+                >
+                  <span>Calculation Logic (LaTeX)</span>
+                  {showInheritanceLogic ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+
+              {/* Logic Explanation Box with LaTeX */}
+              {showInheritanceLogic && (
+                  <div className="bg-blue-50/50 p-4 border-l-4 border-blue-500 text-blue-900 space-y-2">
+                    <div className="text-xs font-bold mb-2 text-blue-400 uppercase tracking-widest">Formula</div>
+                    <Latex tex={inheritanceResults.texFormula} />
+                    
+                    <div className="mt-3 pt-3 border-t border-blue-200/50 text-xs font-mono text-blue-700">
+                      ※ 民法上の養子数: {adoptedChildren}人 → 税法上の算入数: {inheritanceResults.countedAdopted}人
+                      <br/>
+                      ({hasBiologicalChild ? '実子がいるため上限1人' : '実子がいないため上限2人'})
+                    </div>
+                  </div>
+              )}
+
+              {/* Result */}
+              <div className="border-t-2 border-black pt-4">
+                <div className="flex justify-between items-end">
+                  <span className="text-lg font-bold">基礎控除額</span>
+                  <span className="text-4xl font-bold tracking-tighter">
+                    {inheritanceResults.basicDeduction.toLocaleString()} <span className="text-sm font-normal text-gray-500">万円</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Section 3: 20% Surcharge Visualizer */}
+          <Card title="20% Surcharge Check" icon={AlertCircle}>
+            <div className="relative">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-4">
+                INTERACTIVE DIAGRAM
+              </p>
+
+              {/* Diagram Area */}
+              <div className="h-80 w-full bg-white border border-gray-100 relative overflow-hidden select-none">
+                {/* Connection Lines (SVG) */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                  {/* Lines from A */}
+                  <line x1="150" y1="40" x2="150" y2="80" stroke="#e5e7eb" strokeWidth="2" />
+                  <line x1="150" y1="40" x2="50" y2="180" stroke="#e5e7eb" strokeWidth="2" />
+                  <line x1="150" y1="40" x2="150" y2="180" stroke="#e5e7eb" strokeWidth="2" />
+                  <line x1="150" y1="40" x2="250" y2="180" stroke="#e5e7eb" strokeWidth="2" />
+                  
+                  {/* Grandchildren */}
+                  <line x1="50" y1="180" x2="50" y2="280" stroke="#e5e7eb" strokeWidth="2" />
+                  <line x1="250" y1="180" x2="250" y2="280" stroke="#e5e7eb" strokeWidth="2" strokeDasharray="4" />
+                </svg>
+
+                {/* Root Node */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center group cursor-default">
+                   <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-bold text-sm z-10 shadow-lg ring-4 ring-white transition-transform group-hover:scale-110">
+                     A
+                   </div>
+                   <span className="text-[10px] font-bold mt-1 text-gray-400 uppercase tracking-widest">Decedant</span>
+                </div>
+
+                {/* Nodes */}
+                {relationships.map((rel) => {
+                   const isSelected = selectedRel?.id === rel.id;
+                   const isDead = rel.type === 'dead';
+                   
+                   return (
+                    <button
+                      key={rel.id}
+                      onClick={() => !isDead && setSelectedRel(rel)}
+                      style={{ top: rel.y, left: rel.x }}
+                      className={`
+                        absolute -translate-x-1/2 w-20 p-2 rounded-sm border-2 transition-all duration-300 z-10 flex flex-col items-center gap-1
+                        ${isDead ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed border-dashed' : 'cursor-pointer'}
+                        ${isSelected ? 'border-blue-600 bg-blue-50 shadow-md scale-105' : 'border-gray-200 bg-white hover:border-gray-400'}
+                      `}
+                    >
+                      <span className={`text-xs font-bold leading-tight ${isDead ? 'text-gray-400' : 'text-gray-800'}`}>{rel.label}</span>
+                      {isDead && <span className="text-[9px] text-red-500 font-bold uppercase tracking-widest">Deceased</span>}
+                    </button>
+                  );
+                })}
+
+                {/* Result Tooltip Overlay */}
+                {selectedRel && (
+                  <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm border-2 border-black p-4 shadow-xl animate-in slide-in-from-bottom-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
+                           {selectedRel.label}
+                           <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider">{selectedRel.type}</span>
+                        </h3>
+                        <div className="flex items-center gap-2 mb-3">
+                          {selectedRel.surcharge ? (
+                            <span className="flex items-center gap-2 text-red-600 font-bold bg-red-50 px-3 py-1 text-sm border border-red-100">
+                              <AlertCircle className="w-4 h-4" /> 2割加算 対象
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-2 text-green-600 font-bold bg-green-50 px-3 py-1 text-sm border border-green-100">
+                              <Check className="w-4 h-4" /> 2割加算 対象外
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed font-mono">
+                          {selectedRel.type === 'adopt' && "孫養子: 一親等の血族だが、代襲相続人でないため租税回避防止規定により2割加算対象。"}
+                          {selectedRel.type === 'daishu' && "代襲相続人: 直系卑属として実子と同等の地位を承継するため2割加算対象外。"}
+                          {selectedRel.type === 'spouse' && "配偶者: 常に相続人となり、2割加算の対象外。"}
+                          {selectedRel.type === 'blood1' && "一親等の血族: 実子・父母は2割加算の対象外。"}
+                        </p>
+                      </div>
+                      <button onClick={() => setSelectedRel(null)} className="text-gray-400 hover:text-black transition-colors p-1 hover:bg-gray-100 rounded-full">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+
+        </div>
+      </main>
+      
+      <footer className="max-w-5xl mx-auto px-6 pt-10 pb-20 text-center text-gray-300 text-[10px] font-mono tracking-[0.2em] uppercase">
+        © 2026 Inheritance Tax Calculator / Minimalist Design
+      </footer>
+    </div>
+  );
+}
