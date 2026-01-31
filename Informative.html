@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informatics '22 - macOS Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* * =================================================================
+         * PART 1: INTERFACE & VISUAL STYLE (macOS LIKE + BAUHAUS MINIMALISM)
+         * =================================================================
+         */
+        :root {
+            /* macOS System Colors */
+            --mac-window-bg: rgba(255, 255, 255, 0.85);
+            --mac-title-bar: #F6F6F6;
+            --mac-text: #1D1D1F;
+            --mac-accent: #007AFF; /* System Blue */
+            --mac-border: #D1D1D1;
+            
+            /* Bauhaus Accent Colors (Subtle) */
+            --bauhaus-red: #D22630;
+            --bauhaus-blue: #1D5B8D;
+            --bauhaus-yellow: #F4B805;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
+            background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3CradialGradient id='grad1' cx='50%25' cy='50%25' r='50%25' fx='50%25' fy='50%25'%3E%3Cstop offset='0%25' style='stop-color:rgb(245,245,247);stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:rgb(220,220,225);stop-opacity:1' /%3E%3C/radialGradient%3E%3C/defs%3E%3Crect x='0' y='0' width='100%25' height='100%25' fill='url(%23grad1)' /%3E%3C/svg%3E");
+            background-size: cover;
+            color: var(--mac-text);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Window Container */
+        .mac-window {
+            width: 100%;
+            max-width: 800px;
+            height: 600px; /* Fixed height for consistent UI */
+            background-color: var(--mac-window-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        /* Title Bar & Traffic Lights */
+        .title-bar {
+            height: 38px;
+            background: linear-gradient(to bottom, #F8F8F8, #ECECEC);
+            border-bottom: 1px solid #D1D1D1;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .traffic-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 0.5px solid rgba(0,0,0,0.1);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .traffic-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.1s;
+            font-size: 8px;
+            color: rgba(0,0,0,0.5);
+            font-weight: 900;
+        }
+        
+        .traffic-lights:hover .traffic-btn::after { opacity: 1; }
+
+        .btn-close { background-color: #FF5F57; border-color: #E0443E; }
+        .btn-close::after { content: '×'; }
+        
+        .btn-minimize { background-color: #FEBC2E; border-color: #D89E24; }
+        .btn-minimize::after { content: '−'; }
+        
+        .btn-fullscreen { background-color: #28C840; border-color: #1AAB29; }
+        .btn-fullscreen::after { content: '+'; }
+
+        .window-title {
+            position: absolute;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+            pointer-events: none;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex-grow: 1;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* UI Components */
+        .mac-btn {
+            background: white;
+            border: 1px solid #D1D1D1;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--mac-text);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.1s active;
+        }
+        .mac-btn:active {
+            background: #F5F5F5;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .mac-btn-primary {
+            background: var(--mac-accent);
+            color: white;
+            border: 1px solid #0062CC;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .mac-btn-primary:hover { background: #0069D9; }
+        .mac-btn-primary:active { background: #0056B3; }
+
+        /* Bauhaus Accents in Minimal UI */
+        .bauhaus-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        /* Animation */
+        .fade-enter {
+            animation: fadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            height: 4px;
+            background: #E5E5E5;
+            width: 100%;
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--mac-accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="app-window" class="mac-window">
+        <!-- Title Bar with Traffic Lights -->
+        <div class="title-bar" ondblclick="WindowCtrl.toggleFullscreen()">
+            <div class="traffic-lights">
+                <div class="traffic-btn btn-close" onclick="WindowCtrl.closeApp()" title="終了 (Reset)"></div>
+                <div class="traffic-btn btn-minimize" onclick="WindowCtrl.exitFullscreen()" title="縮小 (Exit Fullscreen)"></div>
+                <div class="traffic-btn btn-fullscreen" onclick="WindowCtrl.requestFullscreen()" title="全画面 (Fullscreen)"></div>
+            </div>
+            <div class="window-title">Informatics '22</div>
+        </div>
+
+        <!-- VIEW: START SCREEN -->
+        <div id="view-start" class="content-area items-center justify-center p-8 fade-enter">
+            <div class="text-center space-y-6 max-w-md w-full">
+                <!-- Icon -->
+                <div class="w-24 h-24 bg-white rounded-[22px] mx-auto shadow-xl flex items-center justify-center border border-gray-100 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100"></div>
+                    <div class="w-12 h-12 bg-[#F4B805] rounded-full mix-blend-multiply opacity-80 absolute top-4 left-4"></div>
+                    <div class="w-12 h-12 bg-[#D22630] rounded-full mix-blend-multiply opacity-80 absolute top-4 right-4"></div>
+                    <div class="w-12 h-12 bg-[#1D5B8D] rounded-full mix-blend-multiply opacity-80 absolute bottom-4 left-9"></div>
+                </div>
+
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">情報学へのとびら</h1>
+                    <p class="text-sm text-gray-500 font-medium">単位認定試験対策アプリ Ver 3.0</p>
+                </div>
+
+                <div class="bg-white/50 rounded-lg p-1 border border-gray-200 inline-flex shadow-sm">
+                    <label class="px-4 py-1.5 rounded-md cursor-pointer hover:bg-white/80 transition-colors flex items-center gap-2">
+                        <input type="radio" name="q-count" value="10" class="sr-only peer" checked>
+                        <span class="text-xs font-medium text-gray-500 peer-checked:text-black">10問</span>
+                    </label>
+                    <div class="w-px bg-gray-200 my-1"></div>
+                    <label class="px-4 py-1.5 rounded-md cursor-pointer hover:bg-white/80 transition-colors flex items-center gap-2">
+                        <input type="radio" name="q-count" value="50" class="sr-only peer">
+                        <span class="text-xs font-medium text-gray-500 peer-checked:text-black">50問</span>
+                    </label>
+                    <div class="w-px bg-gray-200 my-1"></div>
+                    <label class="px-4 py-1.5 rounded-md cursor-pointer hover:bg-white/80 transition-colors flex items-center gap-2">
+                        <input type="radio" name="q-count" value="200" class="sr-only peer">
+                        <span class="text-xs font-medium text-gray-500 peer-checked:text-black">全問</span>
+                    </label>
+                </div>
+
+                <button onclick="App.start()" class="mac-btn mac-btn-primary w-40 h-10 text-sm shadow-md hover:shadow-lg transform transition-all active:scale-95">
+                    開始
+                </button>
+            </div>
+            
+            <div class="absolute bottom-4 text-[10px] text-gray-400 font-medium">
+                Designed for Learning
+            </div>
+        </div>
+
+        <!-- VIEW: QUIZ SCREEN -->
+        <div id="view-quiz" class="hidden content-area flex-col">
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+
+            <div class="flex-grow flex flex-col p-8 sm:p-12 overflow-y-auto">
+                <!-- Header Info -->
+                <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-[#007AFF] bg-blue-50 px-2 py-1 rounded" id="q-category">Category</span>
+                    </div>
+                    <div class="text-xs font-medium text-gray-400">
+                        <span id="q-current" class="text-gray-900 font-bold">1</span> / <span id="q-total">10</span>
+                    </div>
+                </div>
+
+                <!-- Question -->
+                <div class="flex-grow mb-8">
+                    <h2 id="q-text" class="text-xl font-bold leading-relaxed text-gray-800 font-feature">
+                        Loading Question...
+                    </h2>
+                </div>
+
+                <!-- Options -->
+                <div class="space-y-3">
+                    <button onclick="App.answer(0)" id="btn-opt-0" class="w-full text-left bg-white border border-gray-200 hover:border-[#007AFF] hover:bg-blue-50/30 rounded-lg p-4 transition-all duration-200 group relative overflow-hidden shadow-sm">
+                        <span class="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-[#007AFF] transition-colors"></span>
+                        <div class="flex items-start">
+                            <span class="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-bold flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-[#007AFF] group-hover:text-white transition-colors">A</span>
+                            <span id="opt-0-text" class="text-sm font-medium text-gray-700 group-hover:text-gray-900">Option A</span>
+                        </div>
+                    </button>
+                    
+                    <button onclick="App.answer(1)" id="btn-opt-1" class="w-full text-left bg-white border border-gray-200 hover:border-[#007AFF] hover:bg-blue-50/30 rounded-lg p-4 transition-all duration-200 group relative overflow-hidden shadow-sm">
+                        <span class="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-[#007AFF] transition-colors"></span>
+                        <div class="flex items-start">
+                            <span class="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-bold flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 group-hover:bg-[#007AFF] group-hover:text-white transition-colors">B</span>
+                            <span id="opt-1-text" class="text-sm font-medium text-gray-700 group-hover:text-gray-900">Option B</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: FEEDBACK OVERLAY (Backdrop Blur) -->
+        <div id="view-feedback" class="hidden absolute inset-0 z-20 bg-white/60 backdrop-blur-md flex flex-col p-8 animate-enter overflow-y-auto">
+            <div class="w-full max-w-lg mx-auto my-auto bg-white rounded-xl shadow-2xl border border-gray-200/50 p-6 sm:p-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <div id="fb-icon-bg" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
+                        <span id="fb-icon"></span>
+                    </div>
+                    <h3 id="fb-title" class="text-lg font-bold text-gray-900"></h3>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-5 border border-gray-100 mb-6 text-sm leading-relaxed text-gray-700">
+                    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Explanation</div>
+                    <p id="fb-explanation"></p>
+                </div>
+
+                <div class="text-right">
+                    <button onclick="App.next()" id="btn-next" class="mac-btn mac-btn-primary px-6">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: RESULT SCREEN -->
+        <div id="view-result" class="hidden content-area items-center justify-center p-8 fade-enter">
+            <div class="text-center w-full max-w-md">
+                <h2 class="text-2xl font-bold mb-8 tracking-tight">Result</h2>
+                
+                <div class="relative inline-block mb-8">
+                    <svg class="w-40 h-40 transform -rotate-90">
+                        <circle cx="80" cy="80" r="70" stroke="#F0F0F0" stroke-width="8" fill="transparent" />
+                        <circle id="score-circle" cx="80" cy="80" r="70" stroke="#007AFF" stroke-width="8" fill="transparent" stroke-dasharray="440" stroke-dashoffset="440" stroke-linecap="round" class="transition-all duration-1000 ease-out"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center flex-col">
+                        <span id="final-score" class="text-4xl font-bold text-gray-900">0</span>
+                        <span class="text-xs text-gray-400 mt-1">SCORE</span>
+                    </div>
+                </div>
+
+                <p id="result-msg" class="text-sm font-medium text-gray-600 mb-8"></p>
+
+                <div class="flex justify-center gap-3">
+                    <button onclick="App.restart()" class="mac-btn w-32">
+                        終了
+                    </button>
+                    <button onclick="App.restart()" class="mac-btn mac-btn-primary w-32">
+                        再挑戦
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* * =================================================================
+         * PART 2: QUESTION DATABASE (200 ITEMS - Compacted for implementation)
+         * =================================================================
+         */
+        const DB = [
+            // --- 第1回 情報化する社会 ---
+            { id: 1, category: "情報社会", question: "「情報リテラシー」の現代的定義において重視される能力は？", options: ["機器操作能力のみ", "情報の評価・活用能力"], answer: 1, explanation: "単なる操作スキル（コンピュータリテラシー）を超え、情報の真偽や価値を判断し、適切に活用する能力が重視されます。" },
+            { id: 2, category: "情報社会", question: "「デジタル・ディバイド」の要因として適切でないものは？", options: ["個人の嗜好", "経済的格差"], answer: 0, explanation: "デジタル・ディバイドは個人の好き嫌いではなく、所得、地域、年齢、障害などの社会的要因による情報格差を指します。" },
+            { id: 3, category: "情報社会", question: "「Society 5.0」が目指す社会像は？", options: ["サイバー空間とフィジカル空間の融合", "完全なる仮想空間への移行"], answer: 0, explanation: "日本政府が提唱する、仮想空間と現実空間を高度に融合させ、経済発展と社会的課題の解決を両立する社会です。" },
+            { id: 4, category: "情報社会", question: "「メタサイエンス」としての情報学の側面とは？", options: ["諸科学を横断・結合する学問", "コンピュータのハードウェア研究"], answer: 0, explanation: "情報学は、物理学、生物学、社会科学などあらゆる分野における「情報の流れ」を扱うため、諸科学を横断するメタ科学的性質を持ちます。" },
+            { id: 5, category: "情報社会", question: "情報教育における「モデル化とシミュレーション」の目的は？", options: ["現実世界の現象を抽象化し理解する", "高性能なPCを作ること"], answer: 0, explanation: "複雑な現実世界を単純化したモデルに置き換え、コンピュータ上で模倣実験することで現象を理解・予測します。" },
+            { id: 6, category: "情報社会", question: "「ICT」は何の略か？", options: ["Information and Communication Technology", "International Computer Trade"], answer: 0, explanation: "「情報通信技術」の略。ITにCommunication（通信・伝達）の要素を強調した言葉です。" },
+            { id: 7, category: "情報社会", question: "21世紀型スキルに含まれる「批判的思考力」とは？", options: ["他者の意見を否定する力", "情報を客観的に分析・評価する力"], answer: 1, explanation: "批判（クリティカル）とは否定することではなく、前提を疑い、客観的証拠に基づいて論理的に考えることを指します。" },
+            { id: 8, category: "情報社会", question: "「情報」の特性として正しいものは？", options: ["消費すると減る", "複製しても減らない（非消費性）"], answer: 1, explanation: "情報はモノと異なり、使ったり他人に与えたりしても減りません。また、容易に複製・伝播できる特性を持ちます。" },
+            { id: 9, category: "情報社会", question: "「データ」と「情報」の違いは？", options: ["データは生の事実、情報は意味づけされたもの", "データは文字、情報は画像"], answer: 0, explanation: "データは加工前の数値や事実の集まり。それを特定の文脈で解釈・整理し、意味を持たせたものが情報です。" },
+            { id: 10, category: "情報社会", question: "「ユビキタス社会」の意味は？", options: ["いつでもどこでも情報にアクセスできる社会", "特定の場所でのみネットが使える社会"], answer: 0, explanation: "ラテン語の「いたるところに存在する」に由来し、場所や時間を意識せずに情報ネットワークを利用できる環境を指します。" },
+            { id: 11, category: "情報社会", question: "「テレワーク」の普及による社会的影響は？", options: ["通勤混雑の緩和と働き方の柔軟化", "オフィス需要の増大"], answer: 0, explanation: "情報通信技術を活用した場所にとらわれない働き方は、ワークライフバランスの向上や都市部への集中緩和に寄与します。" },
+            { id: 12, category: "情報社会", question: "「MOOCs」とは何か？", options: ["大規模公開オンライン講座", "モバイル専用のOS"], answer: 0, explanation: "Massive Open Online Coursesの略。インターネット上で誰でも無料で受講できる大規模な講義のことです。" },
+            { id: 13, category: "情報社会", question: "「e-ガバメント（電子政府）」の目的は？", options: ["行政手続きの効率化と透明性の向上", "公務員の数を増やすこと"], answer: 0, explanation: "行政手続きのオンライン化により、利便性の向上、コスト削減、行政情報の公開などを目指します。" },
+            { id: 14, category: "情報社会", question: "「CBT」方式の試験とは？", options: ["Computer Based Testing", "Center Based Testing"], answer: 0, explanation: "コンピュータを使用して実施される試験のこと。問題のランダム出題や即時の採点などが可能です。" },
+            { id: 15, category: "情報社会", question: "「オープンデータ」の特徴は？", options: ["営利目的での利用が禁止されている", "二次利用可能なルールで公開されている"], answer: 1, explanation: "機械判読に適した形式で、営利・非営利を問わず誰もが自由に利用・再配布できるデータのことです。" },
+
+            // --- 第2回 情報のデジタル表現 ---
+            { id: 16, category: "デジタル", question: "アナログ時計とデジタル時計の違いは？", options: ["アナログは連続量、デジタルは離散量", "アナログは正確、デジタルは不正確"], answer: 0, explanation: "アナログは針の位置という連続的な物理量で、デジタルは数値という飛び飛びの（離散的な）値で時間を表現します。" },
+            { id: 17, category: "デジタル", question: "「標本化（サンプリング）」とは？", options: ["時間を一定間隔で区切ること", "数値を整数に丸めること"], answer: 0, explanation: "連続するアナログ信号を、一定の時間間隔で採取する工程です。間隔が短いほど元の波形に近くなります。" },
+            { id: 18, category: "デジタル", question: "「量子化」とは？", options: ["標本化した値を離散的な数値に置き換えること", "データを圧縮すること"], answer: 0, explanation: "標本化された信号の振幅値を、あらかじめ決められた段階値（整数など）に近似する工程です。" },
+            { id: 19, category: "デジタル", question: "量子化ビット数を増やすとどうなる？", options: ["データ量は増えるが精度は上がる", "データ量は減るが精度は下がる"], answer: 0, explanation: "表現できる段階数が増えるため、元の波形をより忠実に再現できますが、1サンプルあたりの情報量が増えるためデータサイズは大きくなります。" },
+            { id: 20, category: "デジタル", question: "「PCM方式」は何に使われる？", options: ["音声のデジタル化", "画像の圧縮"], answer: 0, explanation: "Pulse Code Modulation（パルス符号変調）。CD録音などで使われる、音声をデジタル化する基本的な方式です。" },
+            { id: 21, category: "デジタル", question: "2進数の「10」を10進数で表すと？", options: ["2", "10"], answer: 0, explanation: "2進数の各桁は2の乗数を表します。2^1が1つ、2^0が0個なので、2です。" },
+            { id: 22, category: "デジタル", question: "1バイトは何ビットか？", options: ["8ビット", "16ビット"], answer: 0, explanation: "通常、8ビットをまとめて1バイト（Byte）として扱います。256通りの情報を表現できます。" },
+            { id: 23, category: "デジタル", question: "16進数で「F」の次はどうなる？", options: ["10", "G"], answer: 0, explanation: "16進数は0-9とA-Fを使います。F（15）の次は桁上がりして「10」（16）になります。" },
+            { id: 24, category: "デジタル", question: "「文字コード」の役割は？", options: ["文字と数値の対応関係を定める", "文字のフォントをデザインする"], answer: 0, explanation: "コンピュータ内部では文字も数値として扱われます。どの数値がどの文字に対応するかを決めた規格（ASCII, Unicodeなど）です。" },
+            { id: 25, category: "デジタル", question: "「Unicode」の特徴は？", options: ["世界中の文字を統一的に扱う", "英語のみを扱う"], answer: 0, explanation: "多言語の文字を単一の文字コード体系で扱えるように設計された国際標準規格です。" },
+            { id: 26, category: "デジタル", question: "画像の「解像度」が高いとは？", options: ["画素（ピクセル）の密度が高い", "画面サイズが大きい"], answer: 0, explanation: "単位長さあたりの画素数（dpiなど）が多いことを指し、より精細な画像を表現できます。" },
+            { id: 27, category: "デジタル", question: "「RGB」カラーモデルはどのような方式か？", options: ["加法混色（光の三原色）", "減法混色（色の三原色）"], answer: 0, explanation: "Red, Green, Blueの光を混ぜて色を作る方式。ディスプレイなどはこれを用います。混ぜるほど白に近づきます。" },
+            { id: 28, category: "デジタル", question: "「可逆圧縮」の例は？", options: ["ZIP", "JPEG"], answer: 0, explanation: "ZIPは展開すると完全に元のデータに戻ります（可逆）。JPEGは人間の目に目立たない情報を捨てるため、完全には戻りません（非可逆）。" },
+            { id: 29, category: "デジタル", question: "動画データの正体は？", options: ["静止画の連続表示（パラパラ漫画）", "音の波形データ"], answer: 0, explanation: "短時間に多数の静止画（フレーム）を連続して表示することで、動いているように見せています。" },
+            { id: 30, category: "デジタル", question: "「2の補数」は何のために使われる？", options: ["負の数を表現するため", "小数を表現するため"], answer: 0, explanation: "コンピュータで引き算を足し算として処理するために、負の数を表現する方法として用いられます。" },
+
+            // --- 第3回 コンピュータのしくみ ---
+            { id: 31, category: "ハードウェア", question: "「CPU」の主な役割は？", options: ["演算と制御", "データの長期保存"], answer: 0, explanation: "Central Processing Unit（中央処理装置）。プログラムの命令を解釈し、計算や周辺機器の制御を行います。" },
+            { id: 32, category: "ハードウェア", question: "「主記憶装置（メモリ）」の特徴は？", options: ["高速だが電源を切ると消える（揮発性）", "低速だが電源を切っても消えない"], answer: 0, explanation: "CPUが直接読み書きする作業場所。動作は高速ですが、通常は電源断でデータが消失します。" },
+            { id: 33, category: "ハードウェア", question: "「補助記憶装置（ストレージ）」の例は？", options: ["SSD, HDD", "RAM"], answer: 0, explanation: "電源を切ってもデータを保持できる装置。主記憶装置に比べて低速ですが大容量です。" },
+            { id: 34, category: "ハードウェア", question: "「クロック周波数」とは？", options: ["CPUが動作するタイミング信号の速さ", "インターネットの通信速度"], answer: 0, explanation: "1秒間に何回信号（クロック）を発生させるかを示す値（Hz）。一般に高いほど処理能力が高くなります。" },
+            { id: 35, category: "ハードウェア", question: "「GPU」が得意とする処理は？", options: ["画像処理や並列計算", "複雑な条件分岐"], answer: 0, explanation: "Graphics Processing Unit。元は画像描写用ですが、単純な計算を大量に同時に行う並列処理が得意で、AI開発にも使われます。" },
+            { id: 36, category: "ハードウェア", question: "論理回路の「AND回路」の出力が1になるのは？", options: ["入力がすべて1のとき", "入力のいずれかが1のとき"], answer: 0, explanation: "論理積。全ての入力が真（1）の場合のみ、出力が真（1）になります。" },
+            { id: 37, category: "ハードウェア", question: "論理回路の「OR回路」の出力が1になるのは？", options: ["入力の少なくとも一つが1のとき", "入力がすべて0のとき"], answer: 0, explanation: "論理和。いずれか一つでも真（1）であれば、出力は真（1）になります。" },
+            { id: 38, category: "ハードウェア", question: "論理回路の「NOT回路」の役割は？", options: ["入力を反転させる（0なら1、1なら0）", "入力をそのまま出力する"], answer: 0, explanation: "論理否定。0を1に、1を0に変換します。" },
+            { id: 39, category: "ハードウェア", question: "「ムーアの法則」とは？", options: ["半導体の集積率は18ヶ月で2倍になる", "コンピュータの価格は毎年半額になる"], answer: 0, explanation: "インテル創業者ゴードン・ムーアの経験則。長年維持されてきましたが、近年は物理的限界に近づいています。" },
+            { id: 40, category: "ハードウェア", question: "「バス（Bus）」とは？", options: ["データが通る伝送路", "CPUの冷却装置"], answer: 0, explanation: "コンピュータ内部で、CPUやメモリ、周辺機器の間でデータをやり取りするための共通の経路です。" },
+            { id: 41, category: "ハードウェア", question: "「キャッシュメモリ」の設置目的は？", options: ["CPUと主記憶の速度差を埋める", "データをバックアップする"], answer: 0, explanation: "超高速なCPUと比較的低速な主記憶の間に置かれる高速な小容量メモリで、処理の待ち時間を減らします。" },
+            { id: 42, category: "ハードウェア", question: "「BIOS/UEFI」の役割は？", options: ["ハードウェアの初期化とOSの起動", "ウイルスの駆除"], answer: 0, explanation: "電源投入直後に動作し、ハードウェアの状態を確認・設定した後、OSをストレージから読み込みます。" },
+            { id: 43, category: "ハードウェア", question: "「SSD」がHDDより優れている点は？", options: ["高速で衝撃に強い", "価格が安く容量が無制限"], answer: 0, explanation: "物理的な駆動部品がないため、読み書きが高速で静音、耐衝撃性に優れています。" },
+            { id: 44, category: "ハードウェア", question: "「組み込みシステム」とは？", options: ["家電などに内蔵され特定の機能を実現する", "汎用的なパソコンのこと"], answer: 0, explanation: "炊飯器や自動車などに組み込まれ、特定の制御を行うためのコンピュータシステムです。" },
+            { id: 45, category: "ハードウェア", question: "コンピュータにおける「インターフェース」とは？", options: ["異なる機器やシステムを繋ぐ接点", "インターネットの閲覧ソフト"], answer: 0, explanation: "USBやHDMIなどのハードウェア接続口や、GUIなどのユーザー接点を含め、ものごとの境界・接続部分を指します。" },
+
+            // --- 第4回 ネットワークの歴史としくみ ---
+            { id: 46, category: "ネットワーク", question: "「パケット交換方式」の利点は？", options: ["回線を複数の通信で共有できる", "通信品質が完全に保証される"], answer: 0, explanation: "データを小包（パケット）に分割して送ることで、一つの回線を効率よく共有できます。回線交換方式（電話）との大きな違いです。" },
+            { id: 47, category: "ネットワーク", question: "「IPアドレス」とは？", options: ["ネット上の住所にあたる番号", "パソコンの製造番号"], answer: 0, explanation: "インターネット上の機器を識別するための番号。IPv4では「192.168.1.1」のように表記されます。" },
+            { id: 48, category: "ネットワーク", question: "「DNS」の役割は？", options: ["ドメイン名とIPアドレスを変換する", "メールを配送する"], answer: 0, explanation: "人間が覚えやすいドメイン名（google.com）を、コンピュータが理解できるIPアドレスに変換するシステムです。" },
+            { id: 49, category: "ネットワーク", question: "「DHCP」は何をする？", options: ["IPアドレスを自動的に割り当てる", "Webページを表示する"], answer: 0, explanation: "ネットワークに接続した機器に対して、自動的にIPアドレスなどの設定情報を配布するプロトコルです。" },
+            { id: 50, category: "ネットワーク", question: "「ルーター」の役割は？", options: ["異なるネットワーク同士を中継する", "ウイルスを除去する"], answer: 0, explanation: "パケットの宛先IPアドレスを見て、最適な経路へ転送（ルーティング）する機器です。" },
+            { id: 51, category: "ネットワーク", question: "「LAN」とは？", options: ["Local Area Network（構内通信網）", "Large Area Network"], answer: 0, explanation: "家庭内や社内など、限定された範囲内のネットワークのことです。" },
+            { id: 52, category: "ネットワーク", question: "「プロトコル」とは？", options: ["通信を行うための手順や規約", "通信ケーブルの種類"], answer: 0, explanation: "コンピュータ同士が会話するための「言語」や「約束事」にあたります（例：HTTP, TCP/IP）。" },
+            { id: 53, category: "ネットワーク", question: "「OSI参照モデル」は何階層？", options: ["7階層", "4階層"], answer: 0, explanation: "通信機能を7つの階層に分割して定義したモデル。物理層からアプリケーション層まであります。" },
+            { id: 54, category: "ネットワーク", question: "「ベストエフォート型」通信とは？", options: ["最善は尽くすが品質は保証しない", "常に最高速度を保証する"], answer: 0, explanation: "インターネットの基本的な考え方。混雑時には速度が低下したりパケットが廃棄されたりする可能性があります。" },
+            { id: 55, category: "ネットワーク", question: "「IPv6」が登場した主な理由は？", options: ["IPv4のアドレスが枯渇したから", "通信速度を倍にするため"], answer: 0, explanation: "IPv4の約43億個のアドレスでは足りなくなったため、事実上無限に近いアドレス空間を持つIPv6が開発されました。" },
+            { id: 56, category: "ネットワーク", question: "「クライアント・サーバ」モデルとは？", options: ["サービスを要求する側と提供する側に分かれる", "すべてのコンピュータが対等につながる"], answer: 0, explanation: "Web閲覧のように、クライアント（ブラウザ）がサーバに要求を出し、サーバが応答する形態です。" },
+            { id: 57, category: "ネットワーク", question: "「P2P（ピアツーピア）」の特徴は？", options: ["専用サーバなしで端末同士が直接通信する", "巨大なサーバがすべて管理する"], answer: 0, explanation: "端末（Peer）同士が対等な立場でデータをやり取りする方式。LINEの通話機能やブロックチェーンなどで使われます。" },
+            { id: 58, category: "ネットワーク", question: "「Wi-Fi」は何の規格？", options: ["無線LANの標準規格", "携帯電話の通信規格"], answer: 0, explanation: "IEEE 802.11シリーズの規格に基づく無線LAN技術のブランド名です。" },
+            { id: 59, category: "ネットワーク", question: "「光ファイバー」の特徴は？", options: ["光信号でデータを伝送し、高速でノイズに強い", "電気信号で伝送し、安価だが遅い"], answer: 0, explanation: "ガラスやプラスチックの繊維の中を光が通ることで情報を伝えます。電磁ノイズの影響を受けません。" },
+            { id: 60, category: "ネットワーク", question: "「IoT」とは？", options: ["Internet of Things（モノのインターネット）", "Internet of Time"], answer: 0, explanation: "家電やセンサーなど、あらゆる「モノ」がインターネットにつながり、情報をやり取りすることです。" },
+
+            // --- 第5回 インターネットの活用 ---
+            { id: 61, category: "Web", question: "「WWW」の考案者は？", options: ["ティム・バーナーズ＝リー", "ビル・ゲイツ"], answer: 0, explanation: "CERN（欧州原子核研究機構）の研究者であった彼が、情報をリンクで結びつけるハイパーテキストシステムを考案しました。" },
+            { id: 62, category: "Web", question: "「HTML」の役割は？", options: ["Webページの構造を記述する", "データの通信速度を上げる"], answer: 0, explanation: "HyperText Markup Language。タグを使って見出しやリンク、画像などの構造を指定します。" },
+            { id: 63, category: "Web", question: "「HTTP」とは？", options: ["Webブラウザとサーバが通信するプロトコル", "メールを送るプロトコル"], answer: 0, explanation: "HyperText Transfer Protocol。Webページのデータを転送するための決まり事です。" },
+            { id: 64, category: "Web", question: "「URL」とは？", options: ["ネット上のリソースの場所を示す文字列", "ユーザーの名前"], answer: 0, explanation: "Uniform Resource Locator。いわゆるWebページのアドレス（住所）です。" },
+            { id: 65, category: "Web", question: "「Cookie」の機能は？", options: ["Webサーバがブラウザに情報を保存させる", "ウイルスを検知する"], answer: 0, explanation: "ユーザーの識別情報などをブラウザ側に保存し、次回アクセス時に利用する仕組み。ログイン状態の維持などに使われます。" },
+            { id: 66, category: "Web", question: "メール送信に使われるプロトコルは？", options: ["SMTP", "POP3"], answer: 0, explanation: "Simple Mail Transfer Protocol。メールを相手のサーバまで届ける（送信・転送）役割を持ちます。" },
+            { id: 67, category: "Web", question: "メール受信に使われるプロトコルは？", options: ["POP3 / IMAP", "SMTP"], answer: 0, explanation: "サーバにあるメールを自分の端末に取り込む（POP）か、サーバ上で閲覧する（IMAP）ために使います。" },
+            { id: 68, category: "Web", question: "「検索エンジン」のロボット（クローラ）は何をする？", options: ["Webページを巡回して情報を収集する", "検索結果を表示する"], answer: 0, explanation: "リンクを辿ってWebページを巡回し、データベース（インデックス）を作成します。" },
+            { id: 69, category: "Web", question: "「クラウドコンピューティング」とは？", options: ["ネット経由でサーバやアプリを利用する形態", "自分のPCですべて処理する形態"], answer: 0, explanation: "手元のPCにソフトを入れなくても、インターネットを通じてサービス（GmailやGoogle Driveなど）を利用できる仕組みです。" },
+            { id: 70, category: "Web", question: "「SNS」の特徴的な機能は？", options: ["ユーザー間のつながりと情報の拡散", "一方的な情報発信"], answer: 0, explanation: "Social Networking Service。人と人とのつながりを促進し、「いいね」やシェアによる拡散機能などを持ちます。" },
+            { id: 71, category: "Web", question: "「CC」でメールを送ると？", options: ["受信者全員にアドレスが見える", "受信者には誰に送ったか分からない"], answer: 0, explanation: "Carbon Copy。参考までに送る相手を指定します。アドレスは受信者全員に公開されます。" },
+            { id: 72, category: "Web", question: "「BCC」でメールを送ると？", options: ["他の受信者にはアドレスが見えない", "全員にアドレスが見える"], answer: 0, explanation: "Blind Carbon Copy。他の受信者に知られずに送りたい場合に使います。一斉送信時のマナーとしても重要です。" },
+            { id: 73, category: "Web", question: "「ストリーミング」とは？", options: ["データをダウンロードしながら再生する", "完全に保存してから再生する"], answer: 0, explanation: "動画や音声データを、すべてダウンロードし終わるのを待たずに、受信した端から再生する方式です。" },
+            { id: 74, category: "Web", question: "「Wiki」システムの最大の特徴は？", options: ["誰でも簡単にページの編集ができる", "百科事典専用である"], answer: 0, explanation: "Webブラウザ上で、特別な知識なしに共同でWebページを作成・編集できるシステムです（Wikipediaが有名）。" },
+            { id: 75, category: "Web", question: "「RSS」は何に使われる？", options: ["Webサイトの更新情報の配信", "動画の圧縮"], answer: 0, explanation: "ニュースサイトやブログなどの更新情報（タイトルや要約）をまとめて配信・取得するためのフォーマットです。" },
+
+            // --- 第6-7回 情報倫理とセキュリティ ---
+            { id: 76, category: "セキュリティ", question: "情報セキュリティの3要素「CIA」に含まれないのは？", options: ["Convenience（利便性）", "Integrity（完全性）"], answer: 0, explanation: "3要素は、機密性(Confidentiality)、完全性(Integrity)、可用性(Availability)です。" },
+            { id: 77, category: "セキュリティ", question: "「ソーシャルエンジニアリング」とは？", options: ["人間の心理や隙をついて情報を盗む手法", "SNSを使った技術"], answer: 0, explanation: "パスワードを覗き見る（ショルダーハッキング）や、電話で担当者になりすますなど、技術を使わないアナログな攻撃手法です。" },
+            { id: 78, category: "セキュリティ", question: "「フィッシング詐欺」の手口は？", options: ["偽サイトに誘導して個人情報を入力させる", "魚釣りゲームで課金させる"], answer: 0, explanation: "金融機関などを装ったメールで偽のWebサイトに誘導し、IDやパスワード、カード番号などを盗み取ります。" },
+            { id: 79, category: "セキュリティ", question: "「ランサムウェア」に感染するとどうなる？", options: ["データが暗号化され、復旧と引き換えに金銭を要求される", "PCが爆発する"], answer: 0, explanation: "Ransom（身代金）ウェア。企業の重要データを人質に取る攻撃として猛威を振るっています。" },
+            { id: 80, category: "セキュリティ", question: "「DDoS攻撃」とは？", options: ["多数の機器から一斉にアクセスしてサーバをダウンさせる", "データを盗み見る"], answer: 0, explanation: "分散型（Distributed）DoS攻撃。乗っ取った多数のPC（ボットネット）を踏み台にして、標的のサーバをパンクさせます。" },
+            { id: 81, category: "セキュリティ", question: "「共通鍵暗号方式」の課題は？", options: ["鍵の配送（受け渡し）時の安全性", "暗号化の速度が遅い"], answer: 0, explanation: "暗号化と復号に同じ鍵を使うため、その鍵をどうやって安全に相手に渡すか（鍵配送問題）が課題となります。" },
+            { id: 82, category: "セキュリティ", question: "「公開鍵暗号方式」の特徴は？", options: ["暗号化と復号に異なる鍵を使う", "暗号化と復号に同じ鍵を使う"], answer: 0, explanation: "誰でも使える「公開鍵」で暗号化し、受信者だけが持つ「秘密鍵」で復号します。鍵配送問題を解決しました。" },
+            { id: 83, category: "セキュリティ", question: "公開鍵暗号を使った「デジタル署名」で確認できることは？", options: ["発信元の証明と改ざんの有無", "送信経路の暗号化"], answer: 0, explanation: "送信者の秘密鍵で暗号化（署名）し、受信者が送信者の公開鍵で復号することで、「本人が書いたこと」と「改ざんされていないこと」を証明します。" },
+            { id: 84, category: "セキュリティ", question: "「CA（認証局）」の役割は？", options: ["公開鍵が本人のものであることを証明する", "インターネットの接続を管理する"], answer: 0, explanation: "信頼できる第三者機関として、Webサイトなどの公開鍵に対し「電子証明書」を発行し、なりすましを防ぎます。" },
+            { id: 85, category: "セキュリティ", question: "「SSL/TLS」で実現できることは？", options: ["通信の暗号化とサーバの認証", "回線速度の向上"], answer: 0, explanation: "Webブラウザとサーバ間の通信を暗号化し、盗聴や改ざんを防ぎます（URLがhttps://になる）。" },
+            { id: 86, category: "セキュリティ", question: "「ファイアウォール」の役割は？", options: ["外部からの不正アクセスを遮断する", "火災を検知する"], answer: 0, explanation: "ネットワークの出入り口に設置し、許可された通信のみを通し、怪しい通信をブロックする「防火壁」です。" },
+            { id: 87, category: "セキュリティ", question: "「多要素認証（MFA）」とは？", options: ["知識、所有、生体など異なる要素を2つ以上組み合わせる", "パスワードを2回入力する"], answer: 0, explanation: "「知っていること（パスワード）」だけでなく「持っているもの（スマホ）」や「生体（指紋）」を組み合わせることで安全性を高めます。" },
+            { id: 88, category: "セキュリティ", question: "「脆弱性（セキュリティホール）」とは？", options: ["ソフトウェアの設計ミスなどによる欠陥", "パスワードが短いこと"], answer: 0, explanation: "攻撃者に悪用される可能性のある、プログラム上の不具合や設計上のミスのことです。" },
+            { id: 89, category: "セキュリティ", question: "「ゼロデイ攻撃」とは？", options: ["脆弱性が発見され、修正プログラムが出る前に行われる攻撃", "0のつく日に行われる攻撃"], answer: 0, explanation: "対策（パッチ）が存在しない無防備な期間（0日目）を狙うため、非常に危険な攻撃です。" },
+            { id: 90, category: "セキュリティ", question: "「標的型攻撃」の特徴は？", options: ["特定の組織を狙い、業務メールを装うなど巧妙に行われる", "不特定多数にばら撒かれる"], answer: 0, explanation: "特定の企業や官公庁をターゲットにし、関係者を装ったメールを送るなどして内部ネットワークに侵入します。" },
+            { id: 91, category: "セキュリティ", question: "「VPN」を利用する目的は？", options: ["公衆回線上に仮想的な専用線を構築し安全に通信する", "海外の動画を見るためだけ"], answer: 0, explanation: "Virtual Private Network。通信を暗号化（トンネリング）することで、離れた拠点間や外出先からでも安全に社内LANなどに接続できます。" },
+            { id: 92, category: "セキュリティ", question: "パスワード管理として不適切なのは？", options: ["複数のサービスで同じパスワードを使い回す", "推測されにくい長い文字列にする"], answer: 0, explanation: "使い回しをしていると、一箇所から漏洩した際に他のサービスも乗っ取られる「リスト型攻撃」の被害に遭います。" },
+            { id: 93, category: "セキュリティ", question: "「バイオメトリクス認証」の例は？", options: ["指紋や顔での認証", "ICカードでの認証"], answer: 0, explanation: "身体的特徴（指紋、虹彩、静脈）や行動的特徴（筆跡）など、個人固有の生体情報を用いて本人確認を行います。" },
+            { id: 94, category: "セキュリティ", question: "「ハッシュ関数」の特徴は？", options: ["一方向性があり、元データに戻せない", "データを圧縮して保存する"], answer: 0, explanation: "あるデータから固定長の不規則な値（ハッシュ値）を生成します。パスワードの保存や、改ざん検知に使われます。" },
+            { id: 95, category: "セキュリティ", question: "「バックドア」とは？", options: ["侵入者が次回簡単にアクセスするために設置する裏口", "正規の管理者用入口"], answer: 0, explanation: "一度侵入に成功した攻撃者が、裏口（不正なプログラムやアカウント）を仕掛け、いつでも侵入できるようにするものです。" },
+            { id: 96, category: "情報倫理", question: "「ネチケット」とは？", options: ["ネットワーク利用上のマナー", "寝る前のチケット"], answer: 0, explanation: "Network Etiquette。誹謗中傷を避ける、機種依存文字を使わないなど、円滑なコミュニケーションのための礼儀です。" },
+            { id: 97, category: "情報倫理", question: "「チェーンメール」を受け取ったら？", options: ["無視して止める", "友達全員に転送する"], answer: 0, explanation: "「不幸になる」などの脅しや「献血のお願い」などの善意を装うものも含め、転送することはネットワークの負荷やデマの拡散に繋がるため、止めるのが正解です。" },
+            { id: 98, category: "情報倫理", question: "「デジタルタトゥー」の意味は？", options: ["一度ネットに拡散した情報は完全に消すのが難しいこと", "デジタルの刺青デザイン"], answer: 0, explanation: "軽率な投稿や画像が半永久的にインターネット上に残り続け、就職や結婚などに悪影響を及ぼすリスクを指します。" },
+            { id: 99, category: "情報倫理", question: "「フレーミング（炎上）」を防ぐには？", options: ["感情的な書き込みを避け、一呼吸置く", "相手を徹底的に論破する"], answer: 0, explanation: "Flaming。文字だけのコミュニケーションは誤解を生みやすいため、送信前に読み返すなどの冷静な対応が必要です。" },
+            { id: 100, category: "情報倫理", question: "他人のIDとパスワードで勝手にログインする行為は？", options: ["不正アクセス禁止法違反", "プライバシーの侵害のみ"], answer: 0, explanation: "「不正アクセス行為の禁止等に関する法律」により犯罪として処罰されます。" },
+
+            // --- 第8回 情報社会と法律 【法学・実務深化】 ---
+            { id: 101, category: "法制度", question: "【法的考察】著作権法が保護するのは？", options: ["思想や感情を創作的に表現したもの", "アイデアや事実そのもの"], answer: 0, explanation: "著作権法は「表現」を保護し、「アイデア」は保護しません（アイデア・表現二分論）。事実や単なるデータも著作物にはなりません。" },
+            { id: 102, category: "法制度", question: "【法的考察】プログラムは著作物か？", options: ["著作物として保護される", "機能的なものなので保護されない"], answer: 0, explanation: "プログラムも「表現」の一種として著作権法で保護されます。ただし、プログラム言語やアルゴリズム（解法）自体は保護されません。" },
+            { id: 103, category: "法制度", question: "【運用実態】「私的使用のための複製」が認められる条件は？", options: ["個人的にまたは家庭内で使用し、かつ自分でコピーする場合", "営利目的でなければ友人に配ってもよい"], answer: 0, explanation: "厳格に解釈されます。企業内でのコピーや、友人に配る行為、Webでの公開は「私的使用」の範囲を超え、違法となります。" },
+            { id: 104, category: "法制度", question: "【法的考察】「引用」が適法とされる要件に含まれないのは？", options: ["著作者の許可を得ること", "主従関係が明確であること"], answer: 0, explanation: "引用は、公正な慣行に合致し、正当な範囲内であれば「無許諾」で行えます（権利制限規定）。逆に許可が必要ならそれは「引用」ではなく「利用許諾契約」です。" },
+            { id: 105, category: "法制度", question: "【運用実態】プロバイダ責任制限法における「発信者情報開示請求」の最大のハードルは？", options: ["権利侵害の明白性の立証", "手数料の支払い"], answer: 0, explanation: "実務上、単なる悪口ではなく「権利（名誉権など）が侵害されたこと」を客観的証拠で示す必要があり、ここが認められないケースが多いです。" },
+            { id: 106, category: "法制度", question: "【法的考察】著作権の中に含まれる「著作者人格権」の特徴は？", options: ["譲渡できず、著作者だけが持つ権利", "他人に売買できる財産権"], answer: 0, explanation: "公表権・氏名表示権・同一性保持権からなり、著作者の精神的利益を守る権利です。一身専属権であり、譲渡や相続はできません。" },
+            { id: 107, category: "法制度", question: "【運用実態】職務著作（法人著作）が成立すると、著作者は誰になる？", options: ["法人（会社など）", "実際に書いた従業員"], answer: 0, explanation: "業務命令で作成し、法人名義で公表する場合などは、法人が著作者となります。これにより、著作者人格権も法人が行使することになります。" },
+            { id: 108, category: "法制度", question: "【法制度】「クリエイティブ・コモンズ」とは？", options: ["著作者が意思表示を行い、利用条件を明示する仕組み", "著作権を放棄する法的宣言"], answer: 0, explanation: "「表示」「非営利」「改変禁止」などのアイコンを組み合わせ、著作権を保持したまま、円滑な利用を促進するライセンスシステムです。" },
+            { id: 109, category: "法制度", question: "【法的考察】個人情報保護法における「要配慮個人情報」とは？", options: ["病歴、犯罪歴、信条など、差別につながる恐れがある情報", "クレジットカード番号"], answer: 0, explanation: "取得には原則として本人の同意が必須であり、オプトアウト方式による第三者提供も禁止されるなど、最も厳格に保護されるカテゴリです。" },
+            { id: 110, category: "法制度", question: "【運用実態】個人データの「第三者提供」を行う原則的なルールは？", options: ["あらかじめ本人の同意を得る必要がある", "警察に届け出ればよい"], answer: 0, explanation: "原則は同意が必要です。ただし、法令に基づく場合や、人の生命を守る緊急時、業務委託の場合などは例外的に同意不要となります。" },
+            { id: 111, category: "法制度", question: "【法的考察】肖像権は法律の条文にあるか？", options: ["明文の規定はないが、判例により認められている", "民法に明記されている"], answer: 0, explanation: "肖像権という言葉は条文にはありませんが、憲法13条（幸福追求権）などを根拠に、判例によって確立された権利です。" },
+            { id: 112, category: "法制度", question: "【運用実態】街中での写真撮影とプライバシー侵害の判断基準は？", options: ["人物が特定でき、受忍限度を超えるかどうか", "許可を取ったかどうかのみ"], answer: 0, explanation: "群衆の一部など特定できない場合は問題になりにくいですが、特定の個人をクローズアップし、私生活上の平穏を乱す（受忍限度を超える）場合は侵害となります。" },
+            { id: 113, category: "法制度", question: "【法制度】「不正競争防止法」で保護される「営業秘密」の3要件は？", options: ["秘密管理性、有用性、非公知性", "独創性、新規性、進歩性"], answer: 0, explanation: "①秘密として管理されていること、②事業活動に有用であること、③公然と知られていないこと、の3つ全てを満たす必要があります。" },
+            { id: 114, category: "法制度", question: "【法的考察】特許権の取得には何が必要か？", options: ["特許庁への出願と審査のパス", "創作した事実のみ"], answer: 0, explanation: "著作権（無方式）とは異なり、産業財産権（特許・意匠・商標）は特許庁に出願し、登録されることで初めて権利が発生します（方式主義）。" },
+            { id: 115, category: "法制度", question: "【運用実態】忘れられる権利（削除権）の日本での扱い（検索結果削除）は？", options: ["プライバシー侵害が公表の利益を上回る場合に認められる", "無条件に認められる"], answer: 0, explanation: "最高裁判例により、削除を求める法的利益が、検索結果として表示し続ける理由（公衆の知る権利）より「明らかに」優越する場合にのみ認められます。" },
+            { id: 116, category: "法制度", question: "【法制度】「通信の秘密」を定めている法律・条文は？", options: ["憲法、電気通信事業法", "プロバイダ責任制限法のみ"], answer: 0, explanation: "憲法21条で保障され、電気通信事業法で具体的に保護されています。通信の内容だけでなく、宛先や通信日時（通信ログ）も秘密に含まれます。" },
+            { id: 117, category: "法制度", question: "【法的考察】AIが作成した絵画に著作権は発生するか？（現行法）", options: ["原則として発生しない", "AIの開発者に発生する"], answer: 0, explanation: "日本の著作権法では「思想感情を創作的に表現したもの」と定義されており、人間が創作的寄与をしていない（AIが自律的に生成した）場合、著作物とは認められません。" },
+            { id: 118, category: "法制度", question: "【運用実態】ネットオークションでのチケット転売は違法？", options: ["不正転売禁止法により、興行主の同意のない有償譲渡禁止等は処罰対象", "常に自由"], answer: 0, explanation: "2019年の法改正により、特定興行入場券の不正転売は刑事罰の対象となりました。" },
+            { id: 119, category: "法制度", question: "【法制度】刑法における「電磁的記録不正作出罪」とは？", options: ["人の事務処理を誤らせる目的で、虚偽のデータを作ること", "PCを壊すこと"], answer: 0, explanation: "文書偽造罪のデジタル版です。オンライン銀行の残高データを書き換えるなどの行為が該当します。" },
+            { id: 120, category: "法制度", question: "【法的考察】特定商取引法がネット通販業者に義務付けているのは？", options: ["住所や連絡先、返品特約などの表示", "24時間のサポート"], answer: 0, explanation: "顔の見えない取引であるため、消費者を保護するために事業者の実態や条件を明示することが厳しく義務付けられています。" },
+            { id: 121, category: "法制度", question: "【運用実態】GDPR（EU一般データ保護規則）は日本企業に関係ある？", options: ["EU域内の個人データを扱うなら適用される", "関係ない"], answer: 0, explanation: "域外適用規定があり、日本企業であってもEU居住者のデータを扱う場合（越境移転など）は、巨額の制裁金を含むこの規則の対象となります。" },
+            { id: 122, category: "法制度", question: "【法制度】「サイバーセキュリティ基本法」の役割は？", options: ["国の責務や基本方針を定める", "ハッカーを逮捕する"], answer: 0, explanation: "具体的な罰則規定ではなく、国の施策の方向性や、関係機関の連携などを定めた基本法です。" },
+            { id: 123, category: "法制度", question: "【法的考察】電子契約における「電子署名」の法的効力は？", options: ["手書きの署名や押印と同等の推定効を持つ", "効力はない"], answer: 0, explanation: "電子署名法により、一定の要件を満たす電子署名は、真正に成立したものと推定されます。" },
+            { id: 124, category: "法制度", question: "【運用実態】学校の授業で市販の問題集をコピーして配布するのは？", options: ["授業の過程で必要と認められる限度なら許諾不要（第35条）", "常に違法"], answer: 0, explanation: "授業目的公衆送信補償金制度などもあり、教育現場では一定の範囲で例外的に無許諾での利用が認められています。" },
+            { id: 125, category: "法制度", question: "【法制度】「知る権利」と「情報公開法」の関係は？", options: ["情報公開法は知る権利を具体化するための手段", "対立する概念"], answer: 0, explanation: "国民主権の理念に基づき、行政機関が持つ情報を国民が監視・参加するために公開を請求する権利を具体化した法律です。" },
+
+            // --- 第9-10回 プログラミング ---
+            { id: 126, category: "プログラミング", question: "「OS（オペレーティングシステム）」の役割は？", options: ["ハードウェアの抽象化と資源管理", "文書作成"], answer: 0, explanation: "アプリに対し、ハードウェアの違いを意識させない共通のインターフェース（API）を提供し、メモリやCPU時間を管理します。" },
+            { id: 127, category: "プログラミング", question: "「コンパイラ」とは？", options: ["ソースコードを一括して機械語に翻訳するプログラム", "1行ずつ実行するプログラム"], answer: 0, explanation: "翻訳作業（コンパイル）を一度行えば、実行ファイルが生成され、高速に動作します（例：C言語）。" },
+            { id: 128, category: "プログラミング", question: "「インタプリタ」とは？", options: ["実行時に逐次翻訳して実行するプログラム", "事前に翻訳するプログラム"], answer: 0, explanation: "柔軟性が高く修正が容易ですが、実行速度はコンパイラ型より劣ります（例：Python, JavaScript）。" },
+            { id: 129, category: "プログラミング", question: "「アルゴリズム」とは？", options: ["問題を解決するための明確な手順", "プログラムのバグ"], answer: 0, explanation: "入力に対し、有限の手順を経て正解を出力するための計算方法やロジックのことです。" },
+            { id: 130, category: "プログラミング", question: "「構造化プログラミング」が推奨する3つの制御構造は？", options: ["順次、選択、反復", "入力、出力、記憶"], answer: 0, explanation: "無秩序なGOTO文を排し、この3つを組み合わせることで論理的で読みやすいプログラムを作ります。" },
+            { id: 131, category: "プログラミング", question: "「オブジェクト指向」における「クラス」と「インスタンス」の関係は？", options: ["設計図と実体（モノ）", "親と子"], answer: 0, explanation: "クラスは「車の設計図」、インスタンスはその設計図から作られた「実際の車」に例えられます。" },
+            { id: 132, category: "プログラミング", question: "「バグ」を取り除く作業を何と呼ぶ？", options: ["デバッグ", "コーディング"], answer: 0, explanation: "初期のコンピュータに蛾（Bug）が挟まって故障した逸話に由来します。" },
+            { id: 133, category: "プログラミング", question: "Pythonの変数における「動的型付け」とは？", options: ["変数の型を宣言しなくても、代入された値で自動的に決まる", "実行中に型を変えられない"], answer: 0, explanation: "x = 10 (整数) の後に x = 'hello' (文字列) と代入できる柔軟な性質です。" },
+            { id: 134, category: "プログラミング", question: "「ライブラリ」とは？", options: ["汎用的な機能を再利用可能な形でまとめた部品群", "本の貸出システム"], answer: 0, explanation: "一から全て書くのではなく、誰かが作った便利な機能（ライブラリ）を読み込んで使うのが効率的です。" },
+            { id: 135, category: "プログラミング", question: "Pythonのリストのインデックスはいくつから始まる？", options: ["0", "1"], answer: 0, explanation: "多くのプログラミング言語同様、最初の要素は「0番目」として扱います。" },
+            { id: 136, category: "プログラミング", question: "フローチャートにおける「ひし形」の意味は？", options: ["判断（条件分岐）", "処理"], answer: 0, explanation: "Yes/Noで道が分かれる条件分岐を表します。長方形は「処理」、端子（楕円）は「開始/終了」です。" },
+            { id: 137, category: "プログラミング", question: "線形探索法（リニアサーチ）の特徴は？", options: ["先頭から順に探すため、データ数に比例して時間がかかる", "データが整列されている必要がある"], answer: 0, explanation: "単純ですが、データが10倍になれば探す時間も平均10倍になります（計算量O(n)）。" },
+            { id: 138, category: "プログラミング", question: "二分探索法（バイナリサーチ）の条件は？", options: ["データがソート（整列）されていること", "データがランダムであること"], answer: 0, explanation: "真ん中を見て大小を判定し、探索範囲を半分ずつに絞り込む高速な手法です。" },
+            { id: 139, category: "プログラミング", question: "「再帰呼び出し」とは？", options: ["関数の中で自分自身を呼び出すこと", "エラーが出たら最初に戻ること"], answer: 0, explanation: "階乗計算や複雑なデータ構造の探索などを記述する際に強力な手法です。" },
+            { id: 140, category: "プログラミング", question: "「オープンソースソフトウェア（OSS）」の特徴は？", options: ["ソースコードが公開され、改変や再配布が許可されている", "無料だがコードは見られない"], answer: 0, explanation: "LinuxやPythonなど、世界中の開発者の協力によって発展しています。" },
+            { id: 141, category: "プログラミング", question: "Pythonコード `for i in range(3): print(i)` の出力は？", options: ["0, 1, 2", "1, 2, 3"], answer: 0, explanation: "range(3)は0以上3未満の整数を生成するため、0, 1, 2が出力されます。" },
+            { id: 142, category: "プログラミング", question: "論理演算 `True and False` の結果は？", options: ["False", "True"], answer: 0, explanation: "and演算は「両方Trueの時だけTrue」。片方がFalseなら結果はFalseです。" },
+            { id: 143, category: "プログラミング", question: "「API」とは？", options: ["Application Programming Interface", "Apple Pay Interface"], answer: 0, explanation: "あるソフトウェアの機能を、外部のプログラムから利用するための窓口や規約のことです。" },
+            { id: 144, category: "プログラミング", question: "「統合開発環境（IDE）」とは？", options: ["エディタ、コンパイラ、デバッガ等がセットになったツール", "高機能な電卓"], answer: 0, explanation: "VS CodeやPyCharmなど、開発に必要なツールを一つにまとめたソフトウェアです。" },
+            { id: 145, category: "プログラミング", question: "「アジャイル開発」の特徴は？", options: ["短いサイクルで実装とテストを繰り返し、柔軟に変更に対応する", "最初に完璧な計画を立てる"], answer: 0, explanation: "変化の激しい現代に適した、スプリント（反復）を繰り返す開発手法です。" },
+
+            // --- 第11-12回 UI/UXとデータベース ---
+            { id: 146, category: "UI/UX", question: "「GUI」とは？", options: ["Graphical User Interface", "General User Info"], answer: 0, explanation: "マウスやタッチでアイコン等の視覚的な要素を操作するインターフェースです。" },
+            { id: 147, category: "UI/UX", question: "「CUI（CLI）」の特徴は？", options: ["文字（コマンド）で命令する、自動化や遠隔操作に向く", "直感的に操作できる"], answer: 0, explanation: "黒い画面に文字を打ち込む方式。習熟が必要ですが、プロにとっては効率的です。" },
+            { id: 148, category: "UI/UX", question: "「ユーザビリティ」とは？", options: ["使いやすさ、有効性、効率性、満足度", "機能の多さ"], answer: 0, explanation: "単に機能があるだけでなく、ユーザーが目的を達成できる「使い勝手」の良さを指します。" },
+            { id: 149, category: "UI/UX", question: "「アクセシビリティ」とは？", options: ["高齢者や障害者を含む誰もが利用できること", "アクセス速度"], answer: 0, explanation: "情報のバリアフリー。視覚障害者向けの読み上げ対応なども含まれます。" },
+            { id: 150, category: "UI/UX", question: "「ユニバーサルデザイン」の考え方は？", options: ["最初から全ての人に使いやすく設計する", "後からバリアを取り除く"], answer: 0, explanation: "「改造」ではなく「最初から」できるだけ多くの人が利用可能なデザインを目指す思想です。" },
+            { id: 151, category: "UI/UX", question: "「UX（ユーザーエクスペリエンス）」とは？", options: ["製品やサービスを通じて得られる利用者の体験全体", "画面のデザインのみ"], answer: 0, explanation: "使いやすさだけでなく、楽しさ、心地よさ、感動など、利用に伴う主観的な体験を含みます。" },
+            { id: 152, category: "UI/UX", question: "「アフォーダンス」の例は？", options: ["ドアノブの形状が「回すこと」を示唆する", "取扱説明書を読む"], answer: 0, explanation: "事前の説明なしに、モノの属性がユーザーに行動を促す（アフォードする）概念です。" },
+            { id: 153, category: "UI/UX", question: "「フールプルーフ」とは？", options: ["誤操作しても危険な状態にならない設計", "賢い人しか使えない設計"], answer: 0, explanation: "例：電子レンジの扉が開いていると加熱しない。人間はミスをする前提で安全策を講じることです。" },
+            { id: 154, category: "データベース", question: "「リレーショナルデータベース（RDB）」のデータ構造は？", options: ["表（テーブル）形式", "階層（ツリー）形式"], answer: 0, explanation: "行と列からなる表形式でデータを管理し、表同士を関連付けるモデルです。" },
+            { id: 155, category: "データベース", question: "RDBにおける「主キー」の条件は？", options: ["行を一意に特定でき、重複がなく、空でないこと", "数値であること"], answer: 0, explanation: "社員番号のように、その値を指定すれば必ず1行だけ特定できる必要があります。" },
+            { id: 156, category: "データベース", question: "「SQL」とは？", options: ["RDBを操作するための問い合わせ言語", "データベースを作る会社"], answer: 0, explanation: "Structured Query Language。データの検索（SELECT）、追加、更新、削除などを行います。" },
+            { id: 157, category: "データベース", question: "SQLでデータを検索する命令は？", options: ["SELECT", "SEARCH"], answer: 0, explanation: "基本構文は `SELECT 列名 FROM 表名 WHERE 条件` です。" },
+            { id: 158, category: "データベース", question: "「正規化」の目的は？", options: ["データの重複を排除し、矛盾を防ぐ", "データを暗号化する"], answer: 0, explanation: "表を適切に分割・整理することで、データの一貫性を保ち、保守性を高めます。" },
+            { id: 159, category: "データベース", question: "「トランザクション処理」で重要な「ACID特性」のAは？", options: ["Atomicity（原子性）", "Access（アクセス性）"], answer: 0, explanation: "「すべて実行されるか、全く実行されないか」のどちらかであることを保証する性質です（中途半端に終わらない）。" },
+            { id: 160, category: "データベース", question: "「ER図」は何を表す？", options: ["実体（Entity）と関連（Relationship）の構造", "プログラムの処理手順"], answer: 0, explanation: "データベース設計時に用いられ、データの実体（顧客、商品など）とそれらの関係（注文する、など）を図示します。" },
+
+            // --- 第13-14回 開発とデータ活用 ---
+            { id: 161, category: "開発手法", question: "「ウォーターフォールモデル」の欠点は？", options: ["後戻り（手戻り）のコストが大きい", "計画が立てにくい"], answer: 0, explanation: "滝のように上流から下流へ進むため、工程完了後の修正が困難です。" },
+            { id: 162, category: "開発手法", question: "「要件定義」とは？", options: ["システムに何が必要かを明確にする工程", "プログラムを書く工程"], answer: 0, explanation: "開発の最初に行う、ユーザーの要求をまとめ、システムが実装すべき機能を定義する最重要工程です。" },
+            { id: 163, category: "開発手法", question: "「単体テスト」とは？", options: ["プログラムの最小単位（モジュール）ごとのテスト", "システム全体のテスト"], answer: 0, explanation: "関数やメソッド単位で正しく動作するかを確認するテストです。" },
+            { id: 164, category: "データ活用", question: "「ビッグデータ」の3V（または4V）に含まれるのは？", options: ["Volume（量）、Variety（多様性）、Velocity（速度）", "Value（価格）"], answer: 0, explanation: "単に量が多いだけでなく、多様な種類のデータが、高頻度で発生することを特徴とします。" },
+            { id: 165, category: "データ活用", question: "統計における「中央値（メジアン）」とは？", options: ["データを大きさ順に並べた真ん中の値", "足して個数で割った値"], answer: 0, explanation: "平均値と異なり、極端な外れ値の影響を受けにくい代表値です。" },
+            { id: 166, category: "データ活用", question: "「最頻値（モード）」とは？", options: ["最も頻繁に現れる値", "最も大きい値"], answer: 0, explanation: "データの中で出現回数が最も多い値のことです。" },
+            { id: 167, category: "データ活用", question: "「相関係数」が「1」に近いと？", options: ["強い正の相関がある（片方が増えればもう片方も増える）", "関係がない"], answer: 0, explanation: "-1から1の値を取り、0は無相関、-1は負の相関（片方が増えれば減る）を表します。" },
+            { id: 168, category: "データ活用", question: "「因果関係」と「相関関係」の違いは？", options: ["原因と結果の関係か、単に同時に起きているだけか", "違いはない"], answer: 0, explanation: "相関があっても因果があるとは限りません（例：アイスが売れる日は水難事故が多い→原因は共に「気温」）。" },
+            { id: 169, category: "データ活用", question: "尺度水準の「名義尺度」は？", options: ["区別するためのラベル（性別、血液型）", "順序があるもの"], answer: 0, explanation: "大小関係も計算も意味を持たない分類データです。" },
+            { id: 170, category: "データ活用", question: "尺度水準の「比率尺度」は？", options: ["絶対的なゼロがあり、倍数の計算ができる（身長、金額）", "温度（摂氏）"], answer: 0, explanation: "「2倍」などの比率に意味がある最強の尺度です。摂氏温度はゼロが相対的なので間隔尺度です。" },
+            { id: 171, category: "データ活用", question: "「POSシステム」で得られるデータは？", options: ["販売時点の売上データ", "顧客の身長"], answer: 0, explanation: "Point Of Sales。いつ、何が、いくつ売れたかをリアルタイムで管理します。" },
+            { id: 172, category: "データ活用", question: "「データマイニング」とは？", options: ["大量のデータから有用な知見（ルールやパターン）を発掘する技術", "データを削除する技術"], answer: 0, explanation: "統計学やAIの手法を用いて、人間では気づかない法則性（おむつとビールの相関など）を見つけ出します。" },
+            { id: 173, category: "データ活用", question: "「AI（人工知能）」における「機械学習」とは？", options: ["データからコンピュータ自身がルールを学習する", "人間が全てのルールをプログラムする"], answer: 0, explanation: "明示的にプログラムされなくても、大量のデータからパターンを認識・学習する技術です。" },
+            { id: 174, category: "データ活用", question: "「ディープラーニング（深層学習）」の特徴は？", options: ["多層のニューラルネットワークを用いる", "浅い計算を行う"], answer: 0, explanation: "人間の脳神経回路を模したモデルを多層化し、特徴量自体を自力で学習できる画期的な手法です。" },
+            { id: 175, category: "データ活用", question: "「教師あり学習」に必要なものは？", options: ["正解ラベル付きのデータ（トレーニングデータ）", "データのみ"], answer: 0, explanation: "「これは猫」といった正解（ラベル）を与えて学習させる手法です。" },
+
+            // --- 第15回 社会の変化と未来 ---
+            { id: 176, category: "未来社会", question: "「シンギュラリティ（技術的特異点）」とは？", options: ["AIが人間の知能を超える転換点", "新しいOSの発売日"], answer: 0, explanation: "AIが自分より賢いAIを作れるようになり、技術進歩が予測不能な速度になる時点を指します。" },
+            { id: 177, category: "未来社会", question: "「ブロックチェーン」を支える技術は？", options: ["P2Pネットワークとハッシュ暗号", "中央集権データベース"], answer: 0, explanation: "分散型の台帳技術であり、データの改ざんが極めて困難な構造を持ちます。" },
+            { id: 178, category: "未来社会", question: "ブロックチェーンの「マイニング」とは？", options: ["計算処理を行い、取引を承認・記録する作業", "地下資源を掘る"], answer: 0, explanation: "膨大な計算を行い、最初に正解を見つけた者がブロックを追加し、報酬（暗号資産）を得る仕組みです。" },
+            { id: 179, category: "未来社会", question: "「スマートコントラクト」とは？", options: ["契約条件が満たされると自動的に実行されるプログラム", "賢い契約書"], answer: 0, explanation: "ブロックチェーン上で、人の手を介さずに契約（送金や権利移転）を自動執行する仕組みです。" },
+            { id: 180, category: "未来社会", question: "「シェアリングエコノミー」の例は？", options: ["Uber、Airbnb", "デパートでの買い物"], answer: 0, explanation: "個人が保有する遊休資産（車、部屋、スキル）をネットを介して共有・貸借する経済モデルです。" },
+            { id: 181, category: "未来社会", question: "「クラウドファンディング」とは？", options: ["ネットを通じて不特定多数から資金を募る仕組み", "雲の研究"], answer: 0, explanation: "群衆（Crowd）と資金調達（Funding）を組み合わせた造語です。" },
+            { id: 182, category: "未来社会", question: "「VR（仮想現実）」と「AR（拡張現実）」の違いは？", options: ["VRは仮想世界に没入、ARは現実に情報を重ねる", "違いはない"], answer: 0, explanation: "Pokemon GOのように現実風景にCGを重ねるのがAR。ゴーグルで視界を覆うのがVRです。" },
+            { id: 183, category: "未来社会", question: "「DX（デジタルトランスフォーメーション）」の本質は？", options: ["デジタル技術によるビジネスや社会の変革", "単なるIT化・ペーパーレス化"], answer: 0, explanation: "単なる効率化（デジタル化）に留まらず、ビジネスモデルや組織文化を変革し、競争上の優位性を確立することです。" },
+            { id: 184, category: "未来社会", question: "「フィンテック（FinTech）」とは？", options: ["Finance（金融）とTechnologyの融合", "魚の養殖技術"], answer: 0, explanation: "スマホ決済、家計簿アプリ、ロボアドバイザーなど、ITを活用した革新的な金融サービスです。" },
+            { id: 185, category: "未来社会", question: "「テレプレゼンス」とは？", options: ["遠隔地にいながら、そこにいるかのような臨場感を得る技術", "テレビ電話"], answer: 0, explanation: "分身ロボットや高精細映像を用い、空間を超えて存在感（プレゼンス）を共有する技術です。" },
+            { id: 186, category: "未来社会", question: "「MaaS（Mobility as a Service）」とは？", options: ["あらゆる移動手段を統合し、一つのサービスとして提供すること", "火星移住計画"], answer: 0, explanation: "電車、バス、タクシー、シェアサイクルなどをアプリで一括検索・予約・決済できるサービスです。" },
+            { id: 187, category: "未来社会", question: "「エッジコンピューティング」の利点は？", options: ["端末側（エッジ）で処理し、遅延削減と通信量抑制を図る", "全てクラウドに送る"], answer: 0, explanation: "自動運転など、瞬時の判断が必要な場合に、遠くのクラウドではなく現場近くで処理を行う技術です。" },
+            { id: 188, category: "未来社会", question: "「デジタルツイン」とは？", options: ["現実空間の情報を双子のようにサイバー空間に再現すること", "二画面スマホ"], answer: 0, explanation: "デジタルの双子。仮想空間でシミュレーションを行い、その結果を現実にフィードバックするために使われます。" },
+            { id: 189, category: "未来社会", question: "「ギグ・エコノミー」の働き方は？", options: ["ネットを通じて単発の仕事を請け負う働き方", "終身雇用"], answer: 0, explanation: "Uber Eats配達員のように、組織に属さず「ギグ（単発）」で働く形態。自由度が高い反面、不安定さも課題です。" },
+            { id: 190, category: "未来社会", question: "「O2O（Online to Offline）」とは？", options: ["ネット（オンライン）から実店舗（オフライン）へ送客する施策", "店でネット注文する"], answer: 0, explanation: "スマホでクーポンを配布して来店を促すなど、Webとリアルを連携させるマーケティング手法です。" },
+            { id: 191, category: "未来社会", question: "「GDPR」が定める「データポータビリティの権利」とは？", options: ["自分のデータを別のサービスに容易に移行できる権利", "データを持ち歩く権利"], answer: 0, explanation: "ユーザーがプラットフォームに縛られず（ロックイン回避）、自分のデータを自由に他社サービスへ移せる権利です。" },
+            { id: 192, category: "未来社会", question: "「ELSI」とは何の略？", options: ["Ethical, Legal and Social Issues（倫理的・法的・社会的課題）", "English Learning System"], answer: 0, explanation: "新技術（AIやゲノム編集など）を社会実装する際に考慮すべき、技術以外の側面の課題です。" },
+            { id: 193, category: "未来社会", question: "「フィルターバブル」の問題点は？", options: ["自分の好みの情報ばかりが表示され、視野が狭くなる", "泡のように情報が消える"], answer: 0, explanation: "検索エンジンなどがパーソナライズを行う結果、自分と異なる意見に触れる機会が失われ、社会的分断を招く恐れがあります。" },
+            { id: 194, category: "未来社会", question: "「アテンション・エコノミー」とは？", options: ["人々の「関心（注意）」を資源として奪い合う経済", "注意深い経済"], answer: 0, explanation: "情報過多の時代において、ユーザーの可処分時間をいかに獲得するかがビジネスの主眼となる状況です。" },
+            { id: 195, category: "未来社会", question: "「プロファイリング」のプライバシーリスクは？", options: ["断片的なデータから、個人の詳細な人物像や行動を推測される", "プロフィール写真が漏れる"], answer: 0, explanation: "直接的な個人情報がなくても、購買履歴や行動ログの分析により、思想信条や健康状態まで予見されるリスクです。" },
+            { id: 196, category: "未来社会", question: "「情報銀行（情報信託機能）」とは？", options: ["個人からデータを預かり、同意の範囲で企業に提供する事業", "ネット銀行のこと"], answer: 0, explanation: "個人が自分のデータをコントロールし、便益（対価やサービス）と引き換えにデータを企業に提供する仲介モデルです。" },
+            { id: 197, category: "未来社会", question: "「トラストアンカー」とは？", options: ["信頼の起点となる存在", "船の錨"], answer: 0, explanation: "デジタルトラストにおいて、全ての信頼関係の拠り所となる認証局や公的機関などを指します。" },
+            { id: 198, category: "未来社会", question: "「説明可能なAI（XAI）」が求められる理由は？", options: ["AIの判断理由がブラックボックスだと責任を負えないから", "AIに言葉を教えるため"], answer: 0, explanation: "医療診断や融資審査など、人生を左右する判断にAIを使う場合、「なぜそうなったか」を人間が理解できる必要があります。" },
+            { id: 199, category: "未来社会", question: "「ディープフェイク」とは？", options: ["AIで作成された、本物と見分けがつかない偽動画", "深い偽装工作"], answer: 0, explanation: "著名人の発言捏造やポルノへの悪用などが社会問題化しており、真偽を見抜くリテラシーが求められます。" },
+            { id: 200, category: "情報学総論", question: "本科目「情報学へのとびら」の最終的な目的は？", options: ["広く深い情報の世界の見取り図を得ること", "プログラマーになること"], answer: 0, explanation: "個別の技術だけでなく、社会・法・倫理・歴史を含む全体像を俯瞰し、情報社会を生きるための羅針盤（見取り図）を持つことが目的です。" }
+        ];
+
+        /* * =================================================================
+         * PART 3: ENGINE (WINDOW LOGIC & QUIZ LOGIC)
+         * =================================================================
+         */
+        
+        // Window Controls Logic
+        const WindowCtrl = (() => {
+            const appWindow = document.getElementById('app-window');
+            
+            const closeApp = () => {
+                // Simulate app closing: Reset state and return to start screen
+                // Optional: Add minimize animation or hide effect
+                appWindow.style.transform = 'scale(0.95)';
+                appWindow.style.opacity = '0';
+                setTimeout(() => {
+                    App.restart(); // Reset internal state
+                    appWindow.style.transform = 'scale(1)';
+                    appWindow.style.opacity = '1';
+                }, 400);
+            };
+
+            const exitFullscreen = () => {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+            };
+
+            const requestFullscreen = () => {
+                if (!document.fullscreenElement) {
+                    appWindow.requestFullscreen().catch(err => {
+                        console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                    });
+                }
+            };
+            
+            const toggleFullscreen = () => {
+                if (!document.fullscreenElement) {
+                    requestFullscreen();
+                } else {
+                    exitFullscreen();
+                }
+            };
+
+            return { closeApp, exitFullscreen, requestFullscreen, toggleFullscreen };
+        })();
+
+        // Quiz Application Logic
+        const App = (() => {
+            const state = {
+                questions: [],
+                currentIndex: 0,
+                score: 0,
+                targetCount: 10
+            };
+
+            const dom = {
+                views: {
+                    start: document.getElementById('view-start'),
+                    quiz: document.getElementById('view-quiz'),
+                    feedback: document.getElementById('view-feedback'),
+                    result: document.getElementById('view-result')
+                },
+                quiz: {
+                    current: document.getElementById('q-current'),
+                    total: document.getElementById('q-total'),
+                    category: document.getElementById('q-category'),
+                    text: document.getElementById('q-text'),
+                    btn0: document.getElementById('btn-opt-0'),
+                    btn1: document.getElementById('btn-opt-1'),
+                    txt0: document.getElementById('opt-0-text'),
+                    txt1: document.getElementById('opt-1-text'),
+                    bar: document.getElementById('progress-bar')
+                },
+                feedback: {
+                    icon: document.getElementById('fb-icon'),
+                    iconBg: document.getElementById('fb-icon-bg'),
+                    title: document.getElementById('fb-title'),
+                    explanation: document.getElementById('fb-explanation')
+                },
+                result: {
+                    score: document.getElementById('final-score'),
+                    msg: document.getElementById('result-msg'),
+                    circle: document.getElementById('score-circle')
+                },
+                radios: document.getElementsByName('q-count')
+            };
+
+            const shuffle = (array) => {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            };
+
+            const switchView = (viewName) => {
+                Object.values(dom.views).forEach(el => el.classList.add('hidden'));
+                dom.views[viewName].classList.remove('hidden');
+                
+                // Trigger reflow for animations
+                if(viewName === 'feedback' || viewName === 'result') {
+                    dom.views[viewName].classList.remove('animate-enter');
+                    void dom.views[viewName].offsetWidth;
+                    dom.views[viewName].classList.add('animate-enter');
+                }
+            };
+
+            const start = () => {
+                state.score = 0;
+                state.currentIndex = 0;
+                
+                // Get selected question count
+                for (const radio of dom.radios) {
+                    if (radio.checked) state.targetCount = parseInt(radio.value);
+                }
+
+                // Prepare questions
+                const shuffledDB = shuffle([...DB]);
+                const count = Math.min(state.targetCount, shuffledDB.length);
+                state.questions = shuffledDB.slice(0, count);
+                
+                renderQuestion();
+                switchView('quiz');
+            };
+
+            const renderQuestion = () => {
+                const q = state.questions[state.currentIndex];
+                const total = state.questions.length;
+                
+                dom.quiz.current.textContent = state.currentIndex + 1;
+                dom.quiz.total.textContent = total;
+                dom.quiz.category.textContent = q.category;
+                dom.quiz.text.textContent = q.question;
+                dom.quiz.txt0.textContent = q.options[0];
+                dom.quiz.txt1.textContent = q.options[1];
+
+                const progress = ((state.currentIndex) / total) * 100;
+                dom.quiz.bar.style.width = `${progress}%`;
+
+                dom.quiz.btn0.disabled = false;
+                dom.quiz.btn1.disabled = false;
+                
+                // Reset styles
+                dom.quiz.btn0.className = "w-full text-left bg-white border border-gray-200 hover:border-[#007AFF] hover:bg-blue-50/30 rounded-lg p-4 transition-all duration-200 group relative overflow-hidden shadow-sm";
+                dom.quiz.btn1.className = dom.quiz.btn0.className;
+            };
+
+            const answer = (choiceIndex) => {
+                const q = state.questions[state.currentIndex];
+                const isCorrect = choiceIndex === q.answer;
+
+                if (isCorrect) state.score++;
+
+                // Prepare Feedback
+                const color = isCorrect ? '#28C840' : '#FF5F57'; // Green or Red
+                const icon = isCorrect ? '✓' : '✕';
+                
+                dom.feedback.icon.textContent = icon;
+                dom.feedback.iconBg.style.backgroundColor = color;
+                
+                dom.feedback.title.textContent = isCorrect ? 'Correct' : 'Incorrect';
+                dom.feedback.title.style.color = isCorrect ? '#1AAB29' : '#E0443E';
+                
+                dom.feedback.explanation.innerHTML = `<span class="font-bold text-gray-900 block mb-2">正解: ${q.options[q.answer]}</span>${q.explanation}`;
+                
+                switchView('feedback');
+            };
+
+            const next = () => {
+                state.currentIndex++;
+                if (state.currentIndex < state.questions.length) {
+                    renderQuestion();
+                    switchView('quiz');
+                } else {
+                    finish();
+                }
+            };
+
+            const finish = () => {
+                dom.result.score.textContent = state.score;
+                
+                const percentage = (state.score / state.questions.length) * 100;
+                let msg = "";
+                if (percentage === 100) msg = "完璧です。素晴らしい理解度です。";
+                else if (percentage >= 80) msg = "大変よくできました。";
+                else if (percentage >= 60) msg = "合格圏内です。";
+                else msg = "復習して再挑戦しましょう。";
+                
+                dom.result.msg.textContent = msg;
+                
+                // Animate circle
+                const circle = dom.result.circle;
+                const circumference = 440; // 2 * pi * r (r=70)
+                const offset = circumference - (percentage / 100) * circumference;
+                
+                // Reset first
+                circle.style.strokeDashoffset = circumference;
+                switchView('result');
+                
+                // Animate
+                setTimeout(() => {
+                    circle.style.strokeDashoffset = offset;
+                    // Color based on score
+                    if (percentage >= 80) circle.style.stroke = "#28C840";
+                    else if (percentage >= 60) circle.style.stroke = "#FEBC2E";
+                    else circle.style.stroke = "#FF5F57";
+                }, 100);
+            };
+
+            return { start, answer, next, restart: () => switchView('start') };
+        })();
+
+    </script>
+</body>
+</html>
