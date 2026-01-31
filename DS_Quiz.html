@@ -3,85 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Science Literacy Quiz (Final)</title>
+    <title>Data Science Literacy Quiz (macOS)</title>
     <style>
         /* =========================================
-           STYLE SECTION (Bauhaus Style)
+           STYLE SECTION (macOS Dark Mode + Bauhaus)
            =========================================
         */
         :root {
-            --c-black:  #121212;
-            --c-white:  #ffffff;
-            --c-bg:     #fdfbf7;
-            --c-red:    #cc3333;
-            --c-blue:   #2a5599;
-            --c-yellow: #eebb22;
-            --c-gray:   #e5e5e5;
+            /* macOS Traffic Lights */
+            --mac-red: #FF5F56;
+            --mac-yellow: #FFBD2E;
+            --mac-green: #27C93F;
+
+            /* Bauhaus Accents */
+            --c-red:    #ff453a; /* iOS Red */
+            --c-blue:   #0a84ff; /* iOS Blue */
+            --c-yellow: #ffd60a; /* iOS Yellow */
+            
+            /* Window Colors */
+            --bg-body: #2e2e2e;      /* デスクトップ背景 (Dim Gray) */
+            --window-bg: #1e1e1e;    /* ウィンドウ背景 */
+            --title-bar: #3a3a3a;    /* タイトルバー */
+            --text-main: #f5f5f7;
+            --text-sub:  #86868b;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Helvetica", "Arial", sans-serif;
-            background-color: var(--c-bg);
-            color: var(--c-black);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
             line-height: 1.6;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             padding: 1rem;
+            /* 選択不可にしてアプリっぽくする */
+            user-select: none;
         }
 
-        .app-container {
+        /* --- macOS WINDOW CONTAINER --- */
+        .app-window {
             width: 100%;
             max-width: 800px;
-            background-color: var(--c-white);
-            border: 4px solid var(--c-black);
-            box-shadow: 10px 10px 0 rgba(0,0,0,0.15);
+            background-color: var(--window-bg);
+            border-radius: 12px; /* 角丸 */
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6); /* ドロップシャドウ */
             display: flex;
             flex-direction: column;
             min-height: 600px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #444;
+        }
+
+        /* --- TITLE BAR (Traffic Lights) --- */
+        .title-bar {
+            background-color: var(--title-bar);
+            height: 38px;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            border-bottom: 1px solid #000;
             position: relative;
         }
 
-        /* --- HEADER --- */
-        header {
-            background-color: var(--c-black);
-            color: var(--c-white);
-            padding: 1rem;
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .traffic-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .traffic-btn::after {
+            /* ホバー時にアイコンを出すための仕込み */
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            color: rgba(0,0,0,0.6);
+            font-size: 8px;
+            font-weight: bold;
+        }
+        .title-bar:hover .traffic-btn::after { opacity: 1; }
+
+        .btn-close { background-color: var(--mac-red); }
+        .btn-close::after { content: '×'; }
+        
+        .btn-min { background-color: var(--mac-yellow); }
+        .btn-min::after { content: '-'; }
+        
+        .btn-max { background-color: var(--mac-green); }
+        .btn-max::after { content: '+'; }
+
+        .window-title {
+            position: absolute;
+            left: 0; right: 0;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ccc;
+            pointer-events: none;
+        }
+
+        /* --- HEADER CONTENT (Score etc) --- */
+        .app-header {
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 60px;
         }
-        .header-title { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.05em; }
-        .header-right { display: flex; align-items: center; gap: 1rem; }
-        .score-mini { font-size: 1rem; font-weight: 700; color: var(--c-yellow); }
-        
-        /* Exit Button in Header */
-        .btn-exit {
-            background: transparent;
-            border: 1px solid #555;
-            color: #aaa;
-            font-size: 0.8rem;
-            padding: 0.3rem 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-exit:hover { background: var(--c-red); color: white; border-color: var(--c-red); }
+        .header-app-name { font-size: 1.2rem; font-weight: 700; color: #fff; }
+        .score-display { font-size: 1rem; font-weight: 600; color: var(--c-yellow); }
 
-        /* --- PROGRESS --- */
-        .progress-container {
-            height: 10px;
-            background: var(--c-gray);
+        /* --- PROGRESS BAR --- */
+        .progress-track {
+            height: 4px;
+            background: #333;
             width: 100%;
-            border-bottom: 4px solid var(--c-black);
         }
-        .progress-bar {
+        .progress-fill {
             height: 100%;
             background: var(--c-blue);
             width: 0%;
             transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--c-blue);
         }
 
         /* --- SCREENS --- */
@@ -93,126 +150,155 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            animation: fadeIn 0.3s ease-out;
+            animation: fadeIn 0.4s ease-out;
         }
         .screen.active { display: flex; }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
         }
 
-        /* --- START SCREEN COMPONENTS --- */
-        .hero-icon { font-size: 5rem; margin-bottom: 1rem; color: var(--c-red); }
-        .hero-title { font-size: 2rem; font-weight: 800; margin-bottom: 1rem; }
-        .hero-desc { color: #555; margin-bottom: 2rem; max-width: 500px; }
-        
-        /* Course Selection Grid */
-        .course-select {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            width: 100%;
-            max-width: 400px;
+        /* --- TYPOGRAPHY & ICONS --- */
+        .hero-icon { 
+            font-size: 4rem; margin-bottom: 1rem; color: var(--c-red); 
+            text-shadow: 0 4px 10px rgba(255, 69, 58, 0.4);
         }
-        .btn-course {
-            padding: 1rem;
-            font-weight: 700;
-            border: 3px solid var(--c-black);
-            background: var(--c-white);
-            cursor: pointer;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
-            transition: transform 0.1s, box-shadow 0.1s;
-        }
-        .btn-course:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
-        .btn-course:hover { filter: brightness(0.95); }
+        .hero-title { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+        .hero-desc { color: var(--text-sub); margin-bottom: 2rem; max-width: 480px; font-size: 0.95rem; }
 
-        /* Course Colors */
-        .c-10 { border-color: var(--c-blue); color: var(--c-blue); }
-        .c-30 { border-color: var(--c-yellow); color: #bba111; }
-        .c-50 { border-color: var(--c-red); color: var(--c-red); }
-        .c-all { border-color: var(--c-black); color: var(--c-black); background: var(--c-black); color: var(--c-white); }
-        .c-all:hover { background: #333; color: white; }
-
-        /* --- QUESTION COMPONENTS --- */
         .q-meta {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-bottom: 1rem;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-weight: 700;
+            letter-spacing: 1px;
+            font-weight: 600;
         }
         .q-text {
-            font-size: 1.4rem;
+            font-size: 1.6rem;
             font-weight: 600;
             margin-bottom: 3rem;
             line-height: 1.4;
+            max-width: 650px;
         }
-        
-        .btn-group {
+
+        /* --- BUTTONS (Bauhaus Accent) --- */
+        /* Course Select Grid */
+        .course-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
+            gap: 12px;
+            width: 100%;
+            max-width: 420px;
+        }
+        
+        button.modern-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text-main);
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+        button.modern-btn:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+        button.modern-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Bauhaus Colors for Buttons */
+        .c-blue { border-left: 4px solid var(--c-blue); }
+        .c-yellow { border-left: 4px solid var(--c-yellow); }
+        .c-red { border-left: 4px solid var(--c-red); }
+        .c-white { border-left: 4px solid #fff; }
+
+        .btn-group-q {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
             width: 100%;
             max-width: 500px;
         }
-        
-        /* General Buttons */
-        button.action-btn {
-            border: 3px solid var(--c-black);
-            background: var(--c-white);
-            color: var(--c-black);
-            padding: 1rem;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 5px 5px 0 var(--c-black);
-            transition: all 0.1s;
+
+        .btn-true { 
+            background: rgba(10, 132, 255, 0.15); 
+            border-color: var(--c-blue); 
+            color: var(--c-blue);
         }
-        button.action-btn:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 var(--c-black); }
+        .btn-true:hover { background: var(--c-blue); color: #fff; }
 
-        .btn-true { color: var(--c-blue); border-color: var(--c-blue); box-shadow: 5px 5px 0 var(--c-blue); }
-        .btn-true:hover { background-color: var(--c-blue); color: var(--c-white); }
-        
-        .btn-false { color: var(--c-red); border-color: var(--c-red); box-shadow: 5px 5px 0 var(--c-red); }
-        .btn-false:hover { background-color: var(--c-red); color: var(--c-white); }
+        .btn-false { 
+            background: rgba(255, 69, 58, 0.15); 
+            border-color: var(--c-red); 
+            color: var(--c-red);
+        }
+        .btn-false:hover { background: var(--c-red); color: #fff; }
 
-        .btn-next { background: var(--c-black); color: var(--c-white); width: 100%; max-width: 300px; margin-top: 1rem; }
-        .btn-next:hover { background: #333; }
+        .btn-next {
+            background: #fff;
+            color: #000;
+            width: 200px;
+            margin-top: 1.5rem;
+            border-radius: 20px;
+        }
+        .btn-next:hover {
+            background: #ddd;
+        }
 
-        /* --- FEEDBACK COMPONENTS --- */
-        .fb-status { font-size: 1.5rem; font-weight: 900; margin-bottom: 1rem; }
-        .fb-correct { color: var(--c-blue); }
-        .fb-wrong { color: var(--c-red); }
-        .fb-box {
-            background: #f4f4f4;
-            border-left: 6px solid var(--c-black);
-            padding: 1.5rem;
+        /* --- FEEDBACK BOX --- */
+        .fb-status { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .text-blue { color: var(--c-blue); }
+        .text-red { color: var(--c-red); }
+
+        .fb-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 2rem;
             text-align: left;
             width: 100%;
+            max-width: 600px;
             margin-bottom: 2rem;
+            border: 1px solid #333;
         }
+        
+        .res-score { font-size: 5rem; font-weight: 800; margin: 1rem 0; letter-spacing: -2px; }
 
-        .res-score { font-size: 4rem; font-weight: 900; color: var(--c-black); margin: 1rem 0; }
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<!-- HTML構造 -->
-<div class="app-container">
-    <header>
-        <div class="header-title" id="displayTitle">APP TITLE</div>
-        <div class="header-right">
-            <div class="score-mini">SCORE: <span id="miniScore">0</span></div>
-            <!-- トップに戻るボタン (初期状態は隠す) -->
-            <button id="btnExit" class="btn-exit hidden" onclick="Engine.resetQuiz()">EXIT</button>
-        </div>
-    </header>
+<!-- macOS Window Container -->
+<div class="app-window" id="appWindow">
     
-    <div class="progress-container">
-        <div id="progressBar" class="progress-bar"></div>
+    <!-- Title Bar (Traffic Lights) -->
+    <div class="title-bar">
+        <div class="traffic-lights">
+            <!-- Red: App Reset -->
+            <button class="traffic-btn btn-close" onclick="Engine.resetQuiz()" title="アプリ終了 (トップへ)"></button>
+            <!-- Yellow: Exit Fullscreen -->
+            <button class="traffic-btn btn-min" onclick="Engine.exitFullscreen()" title="フルスクリーン解除"></button>
+            <!-- Green: Enter Fullscreen -->
+            <button class="traffic-btn btn-max" onclick="Engine.enterFullscreen()" title="フルスクリーン"></button>
+        </div>
+        <div class="window-title">DS Literacy Quiz</div>
+    </div>
+
+    <!-- App Header -->
+    <div class="app-header">
+        <div class="header-app-name" id="displayTitle">DS LITERACY</div>
+        <div class="score-display">SCORE: <span id="miniScore">0</span></div>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="progress-track">
+        <div id="progressBar" class="progress-fill"></div>
     </div>
 
     <!-- START SCREEN -->
@@ -221,12 +307,11 @@
         <h2 class="hero-title" id="startTitle">Title</h2>
         <p class="hero-desc" id="startDesc">Description</p>
         
-        <div style="margin-bottom: 0.5rem; font-weight:bold; color:#666;">SELECT COURSE</div>
-        <div class="course-select">
-            <button class="btn-course c-10" onclick="Engine.startQuiz(10)">10 Questions</button>
-            <button class="btn-course c-30" onclick="Engine.startQuiz(30)">30 Questions</button>
-            <button class="btn-course c-50" onclick="Engine.startQuiz(50)">50 Questions</button>
-            <button class="btn-course c-all" onclick="Engine.startQuiz(null)">ALL Questions</button>
+        <div class="course-grid">
+            <button class="modern-btn c-blue" onclick="Engine.startQuiz(10)">10 Questions</button>
+            <button class="modern-btn c-yellow" onclick="Engine.startQuiz(30)">30 Questions</button>
+            <button class="modern-btn c-red" onclick="Engine.startQuiz(50)">50 Questions</button>
+            <button class="modern-btn c-white" onclick="Engine.startQuiz(null)">All Questions</button>
         </div>
     </div>
 
@@ -234,47 +319,42 @@
     <div id="screenQuestion" class="screen">
         <div class="q-meta">Question <span id="qCurrent">1</span> / <span id="qTotal">10</span></div>
         <div id="qText" class="q-text">Loading...</div>
-        <div class="btn-group">
-            <button class="action-btn btn-true" onclick="Engine.answer(true)">TRUE / 正しい</button>
-            <button class="action-btn btn-false" onclick="Engine.answer(false)">FALSE / 誤り</button>
+        <div class="btn-group-q">
+            <button class="modern-btn btn-true" onclick="Engine.answer(true)">TRUE</button>
+            <button class="modern-btn btn-false" onclick="Engine.answer(false)">FALSE</button>
         </div>
     </div>
 
     <!-- FEEDBACK SCREEN -->
     <div id="screenFeedback" class="screen">
         <div id="fbStatus" class="fb-status">CORRECT</div>
-        <div id="fbAnswer" style="margin-bottom:1rem; font-weight:bold;"></div>
-        <div class="fb-box">
-            <strong>解説:</strong><br>
-            <span id="fbExpl">...</span>
+        <div id="fbAnswer" style="margin-bottom:1.5rem; font-weight:600; font-size:1.1rem; color:#ccc;"></div>
+        <div class="fb-container">
+            <strong style="color:var(--c-yellow);">解説:</strong><br><br>
+            <span id="fbExpl" style="line-height:1.8;">...</span>
         </div>
-        <button class="action-btn btn-next" onclick="Engine.nextQuestion()">NEXT</button>
+        <button class="modern-btn btn-next" onclick="Engine.nextQuestion()">Next Question</button>
     </div>
 
     <!-- RESULT SCREEN -->
     <div id="screenResult" class="screen">
-        <h2 class="hero-title">RESULT</h2>
-        <p>あなたの正解数</p>
-        <div class="res-score"><span id="resScore">0</span> / <span id="resTotal">0</span></div>
-        <p id="resMsg" style="margin-bottom:2rem;">...</p>
-        <button class="action-btn btn-next" onclick="Engine.resetQuiz()">TOP MENU</button>
+        <h2 class="hero-title">Result</h2>
+        <p style="color:#888;">正解数</p>
+        <div class="res-score"><span id="resScore">0</span><span style="font-size:2rem; color:#666;"> / <span id="resTotal">0</span></span></div>
+        <p id="resMsg" style="margin-bottom:2rem; font-size:1.1rem;">...</p>
+        <button class="modern-btn btn-next" onclick="Engine.resetQuiz()">Back to Top</button>
     </div>
 </div>
 
 <script>
-    /* ##########################################################################
-       #                                                                        #
-       #  SECTION 1: CONFIGURATION (設定)                                       #
-       #  アプリの基本設定をここで行います。                                    #
-       #                                                                        #
-       ##########################################################################
-    */
+    /* ==========================================================================
+       SECTION 1: CONFIGURATION
+       ========================================================================== */
     const APP_CONFIG = {
-        title: "DS LITERACY QUIZ", 
+        title: "DS LITERACY", 
         startTitle: "Data Science<br>Challenge",
         startDescription: "全資料（基礎・導入 第1回〜第8回）から厳選された100問のTrue/Falseクイズ。<br>あなたのデータリテラシーをテストします。",
         
-        // 結果画面のメッセージ (正答率% に応じた評価)
         resultMessages: [
             { threshold: 90, msg: "Excellent! データサイエンス・マスターレベルです。" },
             { threshold: 80, msg: "Great Job! かなり高いリテラシーを持っています。" },
@@ -283,13 +363,9 @@
         ]
     };
 
-    /* ##########################################################################
-       #                                                                        #
-       #  SECTION 2: ENGINE (ロジック)                                          #
-       #  ※このセクションは修正不要です。                                      #
-       #                                                                        #
-       ##########################################################################
-    */
+    /* ==========================================================================
+       SECTION 2: ENGINE
+       ========================================================================== */
     
     const Engine = (function() {
         let state = {
@@ -300,7 +376,7 @@
         };
 
         const els = {
-            btnExit: document.getElementById('btnExit'),
+            window: document.getElementById('appWindow'),
             screens: {
                 start: document.getElementById('screenStart'),
                 question: document.getElementById('screenQuestion'),
@@ -331,6 +407,29 @@
             els.display.startDesc.innerHTML = APP_CONFIG.startDescription;
         }
 
+        // --- Window Controls ---
+        function enterFullscreen() {
+            if (els.window.requestFullscreen) {
+                els.window.requestFullscreen();
+            } else if (els.window.webkitRequestFullscreen) { /* Safari */
+                els.window.webkitRequestFullscreen();
+            } else if (els.window.msRequestFullscreen) { /* IE11 */
+                els.window.msRequestFullscreen();
+            }
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(err => {
+                    // フルスクリーンでない場合のエラーは無視
+                    console.log("Not in fullscreen mode");
+                });
+            } else if (document.webkitExitFullscreen) { /* Safari */
+                document.webkitExitFullscreen();
+            }
+        }
+
+        // --- Quiz Logic ---
         function showScreen(name) {
             Object.values(els.screens).forEach(s => {
                 s.classList.remove('active');
@@ -339,13 +438,6 @@
             els.screens[name].style.display = 'flex';
             void els.screens[name].offsetWidth; 
             els.screens[name].classList.add('active');
-
-            // Exitボタンの表示制御: スタート画面と結果画面では非表示
-            if (name === 'start' || name === 'result') {
-                els.btnExit.classList.add('hidden');
-            } else {
-                els.btnExit.classList.remove('hidden');
-            }
         }
 
         function shuffle(array) {
@@ -357,7 +449,6 @@
             return arr;
         }
 
-        // 引数 count で問題数を指定してスタート
         function startQuiz(count) {
             if (typeof questionDB === 'undefined' || !questionDB.length) {
                 alert("Error: DATABASE is empty or not loaded.");
@@ -366,7 +457,6 @@
 
             state.shuffledQuestions = shuffle(questionDB);
             
-            // 指定数があればスライス、なければ全問
             if (count && count > 0 && count < state.shuffledQuestions.length) {
                 state.shuffledQuestions = state.shuffledQuestions.slice(0, count);
             }
@@ -402,11 +492,11 @@
             if (isCorrect) {
                 state.score++;
                 els.display.miniScore.innerText = state.score;
-                els.display.fbStatus.innerText = "CORRECT / 正解！";
-                els.display.fbStatus.className = "fb-status fb-correct";
+                els.display.fbStatus.innerText = "Correct!";
+                els.display.fbStatus.className = "fb-status text-blue";
             } else {
-                els.display.fbStatus.innerText = "WRONG / 不正解...";
-                els.display.fbStatus.className = "fb-status fb-wrong";
+                els.display.fbStatus.innerText = "Incorrect...";
+                els.display.fbStatus.className = "fb-status text-red";
             }
 
             const ansString = q.a ? "TRUE (正しい)" : "FALSE (誤り)";
@@ -445,30 +535,19 @@
         }
 
         function resetQuiz() {
-            // トップに戻る
             state.score = 0;
             els.display.miniScore.innerText = '0';
             els.display.progressBar.style.width = '0%';
             showScreen('start');
         }
 
-        return { init, startQuiz, answer, nextQuestion, resetQuiz };
+        return { init, startQuiz, answer, nextQuestion, resetQuiz, enterFullscreen, exitFullscreen };
     })();
 
-    /* ##########################################################################
-       #                                                                        #
-       #  SECTION 3: DATABASE (問題データベース)                                #
-       #  ここを編集して問題を追加・変更してください。                          #
-       #                                                                        #
-       ##########################################################################
-    */
+    /* ==========================================================================
+       SECTION 3: DATABASE
+       ========================================================================== */
 
-    /*
-      [ カラム定義 ]
-      q: 問題文 (HTML可)
-      a: 正解 (true / false)
-      e: 解説文
-    */
     const questionDB = [
         
         // --- 基礎 第1回 社会をデータでかたる ---
@@ -623,13 +702,6 @@
         { q: "「フィルターバブル」とは、アルゴリズムによって自分の好みに合う情報ばかりが表示され、反対意見などが見えなくなる現象である。", a: true, e: "知的孤立を招くリスクがあります。" },
         { q: "「エコーチェンバー現象」とは、同じ意見を持つ人同士で交流することで、特定の意見や信念が増幅・強化される現象である。", a: true, e: "SNSなどで発生しやすい現象です。" }
     ];
-
-    /* ##########################################################################
-       #                                                                        #
-       #  INITIALIZATION (初期化)                                               #
-       #                                                                        #
-       ##########################################################################
-    */
 
     Engine.init();
 
