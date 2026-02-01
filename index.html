@@ -3,216 +3,251 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Study Portal</title>
-    <!-- 日本語フォントを美しく表示するためにNoto Sans JPを追加 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-
+    <title>Study Portal</title>
     <style>
         :root {
-            /* Solarized Light Palette */
-            --base03: #002b36; --base02: #073642; --base01: #586e75;
-            --base00: #657b83; --base0:  #839496; --base1:  #93a1a1;
-            --base2:  #eee8d5; --base3:  #fdf6e3;
-            --yellow: #b58900; --orange: #cb4b16; --red:    #dc322f;
-            --magenta:#d33682; --violet: #6c71c4; --blue:   #268bd2;
-            --cyan:   #2aa198; --green:  #859900;
+            --bg-color: #F6F6F6;
+            --container-bg: #FFFFFF;
+            --text-main: #1D1D1F;
+            --text-sub: #86868B;
+            --accent-blue: #007AFF;
+            --item-hover: #F2F2F7;
+            --border-color: #E5E5E5;
+            --system-radius: 12px;
         }
 
         body {
-            background-color: var(--base3);
-            color: var(--base00);
-            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Noto Sans JP", sans-serif;
+            margin: 0;
             display: flex;
             justify-content: center;
-            align-items: center; /* 画面の高さが足りない場合はスクロール時に上部が切れないよう注意が必要ですが、今回はmin-height対応 */
+            align-items: center;
             min-height: 100vh;
-            margin: 0;
-            padding: 40px 20px;
-            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* コンテナ */
-        .app-container {
-            width: 100%;
-            max-width: 520px;
-            padding: 0;
+        .window {
+            width: 90%;
+            max-width: 800px;
+            background: var(--container-bg);
+            border-radius: var(--system-radius);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
         }
 
-        /* メインタイトル */
-        h1 {
-            font-size: 0.85rem;
-            color: var(--base1);
-            text-transform: uppercase;
-            letter-spacing: 0.25em;
-            border-bottom: 1px solid var(--base2);
-            padding-bottom: 0.75rem;
-            margin-bottom: 1.5rem;
-            font-weight: 700;
-        }
-
-        /* カテゴリー見出し */
-        h2 {
-            font-size: 0.7rem;
-            color: var(--base1);
-            margin-top: 2rem;
-            margin-bottom: 0.8rem;
-            font-weight: 500;
-            letter-spacing: 0.1em;
-            padding-left: 0.2rem;
-        }
-
-        /* リスト */
-        ul { list-style: none; padding: 0; margin: 0; }
-        li { margin-bottom: 1rem; }
-
-        /* カード（リンク） */
-        a {
+        /* macOS Title Bar */
+        .title-bar {
+            height: 52px;
+            background: var(--container-bg);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            background-color: white;
-            padding: 1.1rem 1.5rem;
-            color: var(--base01);
-            text-decoration: none;
-            border-radius: 2px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* ホバー時の挙動 */
-        a:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.06);
-            color: var(--base02);
-            padding-left: 1.8rem;
-        }
-
-        /* 左側のアクセントカラーバー */
-        .color-bar {
-            position: absolute;
-            left: 0;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
             top: 0;
-            bottom: 0;
-            width: 4px;
-            background-color: var(--base2);
-            transition: width 0.2s;
+            z-index: 10;
         }
-        
-        a:hover .color-bar {
-            width: 6px;
+
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+            width: 60px;
         }
+
+        .light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .red { background: #FF5F57; }
+        .yellow { background: #FEBC2E; }
+        .green { background: #28C840; }
 
         .title-text {
-            font-weight: 500;
-            font-size: 1rem;
-            z-index: 1;
+            flex: 1;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin-right: 60px; /* balance traffic lights */
         }
 
-        .arrow { 
-            font-size: 1.1rem;
-            opacity: 0; 
-            transform: translateX(-10px);
-            transition: all 0.3s ease;
-            color: var(--base1);
+        /* Content Area */
+        .content {
+            padding: 24px 32px;
+            max-height: 80vh;
+            overflow-y: auto;
         }
-        
-        a:hover .arrow { 
-            opacity: 1; 
-            transform: translateX(0);
+
+        .category-section {
+            margin-bottom: 32px;
+        }
+
+        .category-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            padding-left: 4px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        /* Module Item */
+        .module-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        .module-item:hover {
+            background: var(--item-hover);
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .module-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .module-name {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .module-desc {
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        /* Categories Color Palette */
+        .bg-blue { background: #007AFF; }
+        .bg-orange { background: #FF9500; }
+        .bg-green { background: #34C759; }
+        .bg-purple { background: #AF52DE; }
+        .bg-pink { background: #FF2D55; }
+        .bg-gray { background: #8E8E93; }
+
+        /* Custom Scrollbar */
+        .content::-webkit-scrollbar { width: 8px; }
+        .content::-webkit-scrollbar-track { background: transparent; }
+        .content::-webkit-scrollbar-thumb {
+            background: #D1D1D6;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <h1>Study Modules</h1>
-        <div id="module-list-root">
-            <!-- JSによってここにカテゴリーとリストが生成されます -->
+<div class="window">
+    <div class="title-bar">
+        <div class="traffic-lights">
+            <div class="light red"></div>
+            <div class="light yellow"></div>
+            <div class="light green"></div>
         </div>
+        <div class="title-text">Study Modules Portal</div>
     </div>
+    
+    <div class="content" id="portal-root">
+        <!-- Rendered by JS -->
+    </div>
+</div>
 
-    <script>
-        // ---------------------------------------------------------
-        // DATA LAYER: カテゴリーごとのアプリ定義
-        // ---------------------------------------------------------
-        const MODULE_DATA = [
-            {
-                category: "Data & Analysis",
-                items: [
-                    { title: "Data Science Quiz", url: "DS_Quiz.html", color: "var(--magenta)" },
-                    { title: "R Programming Quiz", url: "R_Quiz.html", color: "var(--blue)" },
-                    { title: "Data Management", url: "Data_Management.html", color: "var(--violet)" }
-                ]
-            },
-            {
-                category: "Finance & Economics",
-                items: [
-                    { title: "FOMC Master", url: "FOMC_Master.html", color: "var(--green)" },
-                    { title: "FP1 Portfolio Strategy", url: "FP1_Portfolio.html", color: "var(--cyan)" },
-                    { title: "FP1 Pension System", url: "FP1_Pension.html", color: "var(--cyan)" },
-                    { title: "FP1 Financial Assets", url: "FP1_FAR.html", color: "var(--cyan)" }
-                ]
-            },
-            {
-                category: "Taxation",
-                items: [
-                    { title: "Corporate Tax Master", url: "Corporate_tax_master.html", color: "var(--orange)" },
-                    { title: "Long-term Tax Sim", url: "Long_term_sell_buy_tax.html", color: "var(--yellow)" }
-                ]
-            }
-        ];
+<script>
+    const APP_DATA = [
+        {
+            category: "Data Science & Dev",
+            items: [
+                { name: "Data Science", file: "DS_Quiz.html", icon: "📊", color: "bg-purple" },
+                { name: "R Programming", file: "R_Quiz.html", icon: "R", color: "bg-blue" },
+                { name: "Data Mgmt", file: "Data_Management.html", icon: "🗄", color: "bg-gray" },
+                { name: "Devided Calc", file: "Devided_Calc.html", icon: "➗", color: "bg-orange" },
+                { name: "Informative", file: "Informative.html", icon: "ℹ️", color: "bg-blue" }
+            ]
+        },
+        {
+            category: "Finance & Tax",
+            items: [
+                { name: "Corporate Tax", file: "Corporate_tax_master.html", icon: "🏢", color: "bg-pink" },
+                { name: "FOMC Master", file: "FOMC_Master.html", icon: "🏦", color: "bg-green" },
+                { name: "Asset Tax", file: "Long_term_sell_buy_tax", icon: "📈", color: "bg-orange" },
+                { name: "Inheritance Tax", file: "FP1_souzoku.html", icon: "📜", color: "bg-pink" }
+            ]
+        },
+        {
+            category: "Financial Planning (FP1)",
+            items: [
+                { name: "FP1 FAR", file: "FP1_FAR.html", icon: "⚖️", color: "bg-blue" },
+                { name: "FP1 Pension", file: "FP1_Pension.html", icon: "👴", color: "bg-green" },
+                { name: "FP1 Portfolio", file: "FP1_Portfolio.html", icon: "💼", color: "bg-purple" }
+            ]
+        },
+        {
+            category: "Language",
+            items: [
+                { name: "English Word", file: "English_Word.html", icon: "A", color: "bg-orange" }
+            ]
+        }
+    ];
 
-        // ---------------------------------------------------------
-        // ENGINE LAYER: インターフェース生成
-        // ---------------------------------------------------------
-        document.addEventListener('DOMContentLoaded', () => {
-            const rootElement = document.getElementById('module-list-root');
-
-            MODULE_DATA.forEach(group => {
-                // 1. カテゴリーヘッダー生成
-                const h2 = document.createElement('h2');
-                h2.textContent = group.category;
-                rootElement.appendChild(h2);
-
-                // 2. リストコンテナ生成
-                const ul = document.createElement('ul');
-
-                // 3. 各アイテム生成
-                group.items.forEach(app => {
-                    const li = document.createElement('li');
-                    
-                    const link = document.createElement('a');
-                    link.href = app.url;
-                    
-                    // カラーバー
-                    const colorBar = document.createElement('div');
-                    colorBar.className = 'color-bar';
-                    colorBar.style.backgroundColor = app.color; 
-
-                    // テキスト
-                    const textSpan = document.createElement('span');
-                    textSpan.className = 'title-text';
-                    textSpan.textContent = app.title;
-
-                    // 矢印
-                    const arrowSpan = document.createElement('span');
-                    arrowSpan.className = 'arrow';
-                    arrowSpan.textContent = '→';
-
-                    link.appendChild(colorBar);
-                    link.appendChild(textSpan);
-                    link.appendChild(arrowSpan);
-                    li.appendChild(link);
-                    ul.appendChild(li);
-                });
-
-                rootElement.appendChild(ul);
-            });
+    function renderPortal() {
+        const root = document.getElementById('portal-root');
+        
+        APP_DATA.forEach(section => {
+            const sectionEl = document.createElement('div');
+            sectionEl.className = 'category-section';
+            
+            sectionEl.innerHTML = `
+                <div class="category-title">${section.category}</div>
+                <div class="grid">
+                    ${section.items.map(item => `
+                        <a href="${item.file}" class="module-item">
+                            <div class="icon ${item.color}">${item.icon}</div>
+                            <div class="module-info">
+                                <span class="module-name">${item.name}</span>
+                                <span class="module-desc">${item.file.split('.').pop()}</span>
+                            </div>
+                        </a>
+                    `).join('')}
+                </div>
+            `;
+            root.appendChild(sectionEl);
         });
-    </script>
+    }
+
+    document.addEventListener('DOMContentLoaded', renderPortal);
+</script>
+
 </body>
 </html>
